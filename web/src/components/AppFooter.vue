@@ -1,20 +1,6 @@
 <script setup lang="ts">
 import { versionService, type VersionInfo } from "@/services/version";
-import {
-  BugOutline,
-  ChatbubbleOutline,
-  CheckmarkCircleOutline,
-  DocumentTextOutline,
-  LogoGithub,
-  PeopleOutline,
-  TimeOutline,
-  WarningOutline,
-} from "@vicons/ionicons5";
-import { NIcon, NTooltip } from "naive-ui";
 import { onMounted, ref } from "vue";
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
 
 const versionInfo = ref<VersionInfo>({
   currentVersion: "0.1.0",
@@ -27,34 +13,6 @@ const versionInfo = ref<VersionInfo>({
 });
 
 const isChecking = ref(false);
-
-// 版本状态配置
-const statusConfig = {
-  checking: {
-    color: "#0066cc",
-    icon: TimeOutline,
-    text: t("footer.checking"),
-  },
-  latest: {
-    color: "#18a058",
-    icon: CheckmarkCircleOutline,
-    text: t("footer.latestVersion"),
-  },
-  "update-available": {
-    color: "#f0a020",
-    icon: WarningOutline,
-    text: t("footer.updateAvailable"),
-  },
-  error: {
-    color: "#d03050",
-    icon: WarningOutline,
-    text: t("footer.checkFailed"),
-  },
-};
-
-const formatVersion = (version: string): string => {
-  return version.startsWith("v") ? version : `v${version}`;
-};
 
 const checkVersion = async () => {
   if (isChecking.value) {
@@ -72,15 +30,6 @@ const checkVersion = async () => {
   }
 };
 
-const handleVersionClick = () => {
-  if (
-    (versionInfo.value.status === "update-available" || versionInfo.value.status === "latest") &&
-    versionInfo.value.releaseUrl
-  ) {
-    window.open(versionInfo.value.releaseUrl, "_blank", "noopener,noreferrer");
-  }
-};
-
 onMounted(() => {
   checkVersion();
 });
@@ -90,142 +39,6 @@ onMounted(() => {
   <footer class="app-footer">
     <div class="footer-container">
       <!-- 主要信息区 -->
-      <div class="footer-main">
-        <span class="project-info">
-          <a href="https://github.com/tbphp/gpt-load" target="_blank" rel="noopener noreferrer">
-            <b>GPT-Load</b>
-          </a>
-        </span>
-
-        <n-divider vertical />
-
-        <!-- 版本信息 -->
-        <div
-          class="version-container"
-          :class="{
-            'version-clickable':
-              versionInfo.status === 'update-available' || versionInfo.status === 'latest',
-            'version-checking': isChecking,
-          }"
-          @click="handleVersionClick"
-        >
-          <n-icon
-            v-if="statusConfig[versionInfo.status].icon"
-            :component="statusConfig[versionInfo.status].icon"
-            :color="statusConfig[versionInfo.status].color"
-            :size="14"
-            class="version-icon"
-          />
-          <span class="version-text">
-            {{ formatVersion(versionInfo.currentVersion) }}
-            -
-            <span :style="{ color: statusConfig[versionInfo.status].color }">
-              {{ statusConfig[versionInfo.status].text }}
-              <template v-if="versionInfo.status === 'update-available'">
-                [{{ formatVersion(versionInfo.latestVersion || "") }}]
-              </template>
-            </span>
-          </span>
-        </div>
-
-        <n-divider vertical />
-
-        <!-- 链接区 -->
-        <div class="links-container">
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <a
-                href="https://www.gpt-load.com/docs"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="footer-link"
-              >
-                <n-icon :component="DocumentTextOutline" :size="14" class="link-icon" />
-                <span>{{ t("footer.docs") }}</span>
-              </a>
-            </template>
-            {{ t("footer.officialDocs") }}
-          </n-tooltip>
-
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <a
-                href="https://github.com/tbphp/gpt-load"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="footer-link"
-              >
-                <n-icon :component="LogoGithub" :size="14" class="link-icon" />
-                <span>GitHub</span>
-              </a>
-            </template>
-            {{ t("footer.viewSource") }}
-          </n-tooltip>
-
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <a
-                href="https://github.com/tbphp/gpt-load/issues"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="footer-link"
-              >
-                <n-icon :component="BugOutline" :size="14" class="link-icon" />
-                <span>{{ t("footer.feedback") }}</span>
-              </a>
-            </template>
-            {{ t("footer.reportIssue") }}
-          </n-tooltip>
-
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <a
-                href="https://github.com/tbphp/gpt-load/graphs/contributors"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="footer-link"
-              >
-                <n-icon :component="PeopleOutline" :size="14" class="link-icon" />
-                <span>{{ t("footer.contributors") }}</span>
-              </a>
-            </template>
-            {{ t("footer.viewContributors") }}
-          </n-tooltip>
-
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <a
-                href="https://t.me/+GHpy5SwEllg3MTUx"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="footer-link"
-              >
-                <n-icon :component="ChatbubbleOutline" :size="14" class="link-icon" />
-                <span>Telegram</span>
-              </a>
-            </template>
-            {{ t("footer.joinGroup") }}
-          </n-tooltip>
-        </div>
-
-        <n-divider vertical />
-
-        <!-- 版权信息 -->
-        <div class="copyright-container">
-          <span class="copyright-text">
-            © 2025 by
-            <a
-              href="https://github.com/tbphp"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="author-link"
-            >
-              tbphp
-            </a>
-          </span>
-          <span class="license-text">MIT License</span>
-        </div>
-      </div>
     </div>
   </footer>
 </template>

@@ -1,5 +1,3 @@
-import axios from "axios";
-
 export interface GitHubRelease {
   tag_name: string;
   html_url: string;
@@ -24,7 +22,7 @@ class VersionService {
   private currentVersion: string;
 
   constructor() {
-    this.currentVersion = import.meta.env.VITE_VERSION || "1.0.0";
+    this.currentVersion = import.meta.env.VITE_VERSION || "7.0.0";
   }
 
   /**
@@ -96,26 +94,27 @@ class VersionService {
    * 从 GitHub API 获取最新版本
    */
   private async fetchLatestVersion(): Promise<GitHubRelease | null> {
-    try {
-      const response = await axios.get(
-        "https://api.github.com/repos/tbphp/gpt-load/releases/latest",
-        {
-          timeout: 10000,
-          headers: {
-            Accept: "application/vnd.github.v3+json",
-          },
-        }
-      );
+    // try {
+    //   const response = await axios.get(
+    //     "https://api.github.com/repos/tbphp/gpt-load/releases/latest",
+    //     {
+    //       timeout: 10000,
+    //       headers: {
+    //         Accept: "application/vnd.github.v3+json",
+    //       },
+    //     }
+    //   );
 
-      if (response.status === 200 && response.data) {
-        return response.data;
-      }
+    //   if (response.status === 200 && response.data) {
+    //     return response.data;
+    //   }
 
-      return null;
-    } catch (error) {
-      console.warn("Failed to fetch latest version from GitHub:", error);
-      return null;
-    }
+    //   return null;
+    // } catch (error) {
+    //   console.warn("Failed to fetch latest version from GitHub:", error);
+    //   return null;
+    // }
+    return null;
   }
 
   /**

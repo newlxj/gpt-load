@@ -56,7 +56,7 @@ const handleClose = () => {
 
 // 打开文档
 const openDocs = () => {
-  window.open("https://www.gpt-load.com/docs/configuration/security", "_blank");
+  //window.open("https://www.gpt-load.com/docs/configuration/security", "_blank");
 };
 
 // 组件挂载时检查状态

@@ -52,7 +52,7 @@ const toggleMenu = () => {
 
     <n-drawer v-model:show="isMenuOpen" :width="260" placement="right">
       <n-drawer-content
-        title="GPT Load"
+        title="模型管理平台"
         body-content-style="padding: 0; display: flex; flex-direction: column; height: 100%;"
       >
         <div style="flex: 1; overflow-y: auto">
