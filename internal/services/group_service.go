@@ -146,6 +146,12 @@ type GroupStats struct {
 	Stats30Day  RequestStats `json:"stats_30_day"`
 }
 
+// GroupListStats contains simplified statistics for group list display.
+type GroupListStats struct {
+	Stats24Hour RequestStats `json:"stats_24_hour"`
+	Stats7Day   RequestStats `json:"stats_7_day"`
+}
+
 // ConfigOption describes a configurable override exposed to clients.
 type ConfigOption struct {
 	Key          string
@@ -589,6 +595,41 @@ func (s *GroupService) GetGroupStats(ctx context.Context, groupID uint) (*GroupS
 	return s.getStandardGroupStats(ctx, groupID)
 }
 
+// GetGroupListStats returns simplified statistics for group list display (24h and 7d only).
+func (s *GroupService) GetGroupListStats(ctx context.Context, groupID uint) (*GroupListStats, error) {
+	var group models.Group
+	if err := s.db.WithContext(ctx).First(&group, groupID).Error; err != nil {
+		return nil, app_errors.ParseDBError(err)
+	}
+
+	stats := &GroupListStats{}
+
+	// 根据分组类型选择不同的统计逻辑
+	if group.GroupType == "aggregate" {
+		return s.getAggregateGroupListStats(ctx, groupID)
+	}
+
+	// 获取24小时统计
+	stats24h, err := s.queryGroupHourlyStats(ctx, groupID, 24)
+	if err != nil {
+		logrus.WithError(err).WithField("group_id", groupID).Warn("Failed to fetch 24-hour stats for group list")
+		stats.Stats24Hour = RequestStats{}
+	} else {
+		stats.Stats24Hour = stats24h
+	}
+
+	// 获取7天统计
+	stats7d, err := s.queryGroupHourlyStats(ctx, groupID, 7*24)
+	if err != nil {
+		logrus.WithError(err).WithField("group_id", groupID).Warn("Failed to fetch 7-day stats for group list")
+		stats.Stats7Day = RequestStats{}
+	} else {
+		stats.Stats7Day = stats7d
+	}
+
+	return stats, nil
+}
+
 // queryGroupHourlyStats queries aggregated hourly statistics from group_hourly_stats table
 func (s *GroupService) queryGroupHourlyStats(ctx context.Context, groupID uint, hours int) (RequestStats, error) {
 	var result struct {
@@ -604,6 +645,28 @@ func (s *GroupService) queryGroupHourlyStats(ctx context.Context, groupID uint, 
 	if err := s.db.WithContext(ctx).Model(&models.GroupHourlyStat{}).
 		Select("SUM(success_count) as success_count, SUM(failure_count) as failure_count").
 		Where("group_id = ? AND time >= ? AND time < ?", groupID, startTime, endTime).
+		Scan(&result).Error; err != nil {
+		return RequestStats{}, err
+	}
+
+	return calculateRequestStats(result.SuccessCount+result.FailureCount, result.FailureCount), nil
+}
+
+// queryAggregateGroupHourlyStats queries aggregated hourly statistics for multiple sub-groups
+func (s *GroupService) queryAggregateGroupHourlyStats(ctx context.Context, subGroupIDs []uint, hours int) (RequestStats, error) {
+	var result struct {
+		SuccessCount int64
+		FailureCount int64
+	}
+
+	now := time.Now()
+	currentHour := now.Truncate(time.Hour)
+	endTime := currentHour.Add(time.Hour) // Include current hour
+	startTime := endTime.Add(-time.Duration(hours) * time.Hour)
+
+	if err := s.db.WithContext(ctx).Model(&models.GroupHourlyStat{}).
+		Select("SUM(success_count) as success_count, SUM(failure_count) as failure_count").
+		Where("group_id IN ? AND time >= ? AND time < ?", subGroupIDs, startTime, endTime).
 		Scan(&result).Error; err != nil {
 		return RequestStats{}, err
 	}
@@ -702,6 +765,40 @@ func (s *GroupService) getStandardGroupStats(ctx context.Context, groupID uint) 
 			return stats, nil
 		}
 		return nil, NewI18nError(app_errors.ErrDatabase, "database.group_stats_failed", nil)
+	}
+
+	return stats, nil
+}
+
+// getAggregateGroupListStats returns simplified statistics for aggregate group list display.
+func (s *GroupService) getAggregateGroupListStats(ctx context.Context, groupID uint) (*GroupListStats, error) {
+	subGroupIDs, err := s.aggregateGroupService.GetSubGroupIDs(ctx, groupID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get sub-group IDs: %w", err)
+	}
+
+	if len(subGroupIDs) == 0 {
+		return &GroupListStats{}, nil
+	}
+
+	stats := &GroupListStats{}
+
+	// 聚合24小时统计
+	stats24h, err := s.queryAggregateGroupHourlyStats(ctx, subGroupIDs, 24)
+	if err != nil {
+		logrus.WithError(err).WithField("group_id", groupID).Warn("Failed to fetch 24-hour stats for aggregate group list")
+		stats.Stats24Hour = RequestStats{}
+	} else {
+		stats.Stats24Hour = stats24h
+	}
+
+	// 聚合7天统计
+	stats7d, err := s.queryAggregateGroupHourlyStats(ctx, subGroupIDs, 7*24)
+	if err != nil {
+		logrus.WithError(err).WithField("group_id", groupID).Warn("Failed to fetch 7-day stats for aggregate group list")
+		stats.Stats7Day = RequestStats{}
+	} else {
+		stats.Stats7Day = stats7d
 	}
 
 	return stats, nil

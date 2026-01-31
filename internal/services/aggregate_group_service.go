@@ -388,6 +388,23 @@ type keyStatsResult struct {
 }
 
 // fetchSubGroupsKeyStats batch fetches key statistics for multiple sub-groups concurrently
+// GetSubGroupIDs returns the list of sub-group IDs for an aggregate group.
+func (s *AggregateGroupService) GetSubGroupIDs(ctx context.Context, groupID uint) ([]uint, error) {
+	var groupSubGroups []models.GroupSubGroup
+	if err := s.db.WithContext(ctx).
+		Where("aggregate_group_id = ?", groupID).
+		Find(&groupSubGroups).Error; err != nil {
+		return nil, app_errors.ParseDBError(err)
+	}
+
+	subGroupIDs := make([]uint, 0, len(groupSubGroups))
+	for _, gsg := range groupSubGroups {
+		subGroupIDs = append(subGroupIDs, gsg.SubGroupID)
+	}
+
+	return subGroupIDs, nil
+}
+
 func (s *AggregateGroupService) fetchSubGroupsKeyStats(ctx context.Context, groupIDs []uint) map[uint]keyStatsResult {
 	results := make(map[uint]keyStatsResult)
 	var mu sync.Mutex

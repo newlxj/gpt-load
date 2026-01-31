@@ -199,6 +199,8 @@ var MessagesEnUS = map[string]string{
 	"success.sub_groups_added":         "Sub groups added successfully",
 	"success.sub_group_weight_updated": "Sub group weight updated successfully",
 	"success.sub_group_deleted":        "Sub group deleted successfully",
+	"success.logs_cleared":             "Cleared {{.count}} log records",
+	"success.no_logs_to_clear":         "No logs matching the filter",
 	"group.not_aggregate":              "Group is not an aggregate group",
 	"group.sub_group_already_exists":   "Sub group {{.sub_group_id}} already exists",
 	"group.sub_group_not_found":        "Sub group not found",

@@ -85,6 +85,9 @@ export interface Group {
   sub_group_ids?: number[]; // 子分组ID列表
   created_at?: string;
   updated_at?: string;
+  // 统计信息（列表显示用）
+  stats_24_hour?: RequestStats;
+  stats_7_day?: RequestStats;
 }
 
 export interface GroupConfigOption {

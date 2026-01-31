@@ -199,6 +199,8 @@ var MessagesZhCN = map[string]string{
 	"success.sub_groups_added":         "子分组添加成功",
 	"success.sub_group_weight_updated": "子分组权重更新成功",
 	"success.sub_group_deleted":        "子分组删除成功",
+	"success.logs_cleared":             "已清空{{.count}}条日志记录",
+	"success.no_logs_to_clear":         "没有符合条件的日志记录",
 	"group.not_aggregate":              "该分组不是聚合分组",
 	"group.sub_group_already_exists":   "子分组{{.sub_group_id}}已存在",
 	"group.sub_group_not_found":        "子分组不存在",

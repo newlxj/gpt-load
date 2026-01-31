@@ -199,6 +199,8 @@ var MessagesJaJP = map[string]string{
 	"success.sub_groups_added":         "サブグループが正常に追加されました",
 	"success.sub_group_weight_updated": "サブグループの重みが正常に更新されました",
 	"success.sub_group_deleted":        "サブグループが正常に削除されました",
+	"success.logs_cleared":             "{{.count}}件のログレコードをクリアしました",
+	"success.no_logs_to_clear":         "フィルタに一致するログがありません",
 	"group.not_aggregate":              "グループはアグリゲートグループではありません",
 	"group.sub_group_already_exists":   "サブグループ{{.sub_group_id}}は既に存在します",
 	"group.sub_group_not_found":        "サブグループが見つかりません",

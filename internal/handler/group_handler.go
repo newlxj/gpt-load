@@ -105,7 +105,16 @@ func (s *Server) ListGroups(c *gin.Context) {
 
 	groupResponses := make([]GroupResponse, 0, len(groups))
 	for i := range groups {
-		groupResponses = append(groupResponses, *s.newGroupResponse(&groups[i]))
+		groupResp := s.newGroupResponse(&groups[i])
+		
+		// 获取分组的统计信息（24小时和7天）
+		stats, err := s.GroupService.GetGroupListStats(c.Request.Context(), groups[i].ID)
+		if err == nil && stats != nil {
+			groupResp.Stats24Hour = &stats.Stats24Hour
+			groupResp.Stats7Day = &stats.Stats7Day
+		}
+		
+		groupResponses = append(groupResponses, *groupResp)
 	}
 
 	response.Success(c, groupResponses)
@@ -205,6 +214,9 @@ type GroupResponse struct {
 	LastValidatedAt     *time.Time          `json:"last_validated_at"`
 	CreatedAt           time.Time           `json:"created_at"`
 	UpdatedAt           time.Time           `json:"updated_at"`
+	// 统计信息
+	Stats24Hour         *services.RequestStats `json:"stats_24_hour,omitempty"`
+	Stats7Day           *services.RequestStats `json:"stats_7_day,omitempty"`
 }
 
 // newGroupResponse creates a new GroupResponse from a models.Group.

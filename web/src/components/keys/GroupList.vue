@@ -101,6 +101,18 @@ function handleGroupCreated(group: Group) {
     emit("refresh-and-select", group.id);
   }
 }
+
+// 格式化请求数量显示
+function formatRequestCount(count: number | undefined): string {
+  if (count === undefined || count === 0) return "0";
+  if (count >= 1000000) {
+    return (count / 1000000).toFixed(1) + "M";
+  }
+  if (count >= 1000) {
+    return (count / 1000).toFixed(1) + "K";
+  }
+  return count.toString();
+}
 </script>
 
 <template>
@@ -164,6 +176,27 @@ function handleGroupCreated(group: Group) {
                   <span v-if="group.group_type !== 'aggregate'" class="group-id">
                     #{{ group.name }}
                   </span>
+                </div>
+                <!-- 统计信息 -->
+                <div v-if="group.stats_24_hour || group.stats_7_day" class="group-stats">
+                  <div v-if="group.stats_24_hour" class="stat-item">
+                    <span class="stat-label">{{ t("keys.stats24h") }}:</span>
+                    <span class="stat-value">
+                      {{ formatRequestCount(group.stats_24_hour.total_requests) }}
+                      <span v-if="group.stats_24_hour.failed_requests > 0" class="stat-failed">
+                        / {{ formatRequestCount(group.stats_24_hour.failed_requests) }}
+                      </span>
+                    </span>
+                  </div>
+                  <div v-if="group.stats_7_day" class="stat-item">
+                    <span class="stat-label">{{ t("keys.stats7d") }}:</span>
+                    <span class="stat-value">
+                      {{ formatRequestCount(group.stats_7_day.total_requests) }}
+                      <span v-if="group.stats_7_day.failed_requests > 0" class="stat-failed">
+                        / {{ formatRequestCount(group.stats_7_day.failed_requests) }}
+                      </span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -356,6 +389,46 @@ function handleGroupCreated(group: Group) {
 .group-item.active .group-id {
   opacity: 0.9;
   color: white;
+}
+
+.group-stats {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.stat-label {
+  color: var(--text-color-3);
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.stat-value {
+  color: var(--text-color-2);
+  font-weight: 500;
+  font-family: monospace;
+}
+
+.stat-failed {
+  color: var(--error-color);
+  margin-left: 2px;
+}
+
+.group-item.active .stat-label,
+.group-item.active .stat-value {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.group-item.active .stat-failed {
+  color: rgba(255, 100, 100, 1);
 }
 
 .add-section {

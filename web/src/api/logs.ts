@@ -43,4 +43,9 @@ export const logApi = {
     link.click();
     document.body.removeChild(link);
   },
+
+  // 清空日志
+  clearLogs: (params: Omit<LogFilter, "page" | "page_size">): Promise<ApiResponse<null>> => {
+    return http.delete("/logs", { params });
+  },
 };

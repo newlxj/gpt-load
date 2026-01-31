@@ -61,3 +61,32 @@ func (s *Server) ExportLogs(c *gin.Context) {
 		return
 	}
 }
+
+// ClearLogs handles deleting logs based on filters (physical deletion).
+func (s *Server) ClearLogs(c *gin.Context) {
+	// 获取筛选后的日志数量
+	count, err := s.LogService.CountFilteredLogs(c)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to count filtered logs")
+		response.Error(c, app_errors.ParseDBError(err))
+		return
+	}
+
+	// 如果没有符合条件的日志，直接返回
+	if count == 0 {
+		response.SuccessI18n(c, "success.no_logs_to_clear", nil)
+		return
+	}
+
+	// 执行物理删除
+	deletedCount, err := s.LogService.DeleteFilteredLogs(c)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to delete filtered logs")
+		response.Error(c, app_errors.ParseDBError(err))
+		return
+	}
+
+	response.SuccessI18n(c, "success.logs_cleared", map[string]any{
+		"count": deletedCount,
+	})
+}

@@ -153,3 +153,19 @@ func (s *LogService) StreamLogKeysToCSV(c *gin.Context, writer io.Writer) error 
 
 	return nil
 }
+
+// CountFilteredLogs returns the count of logs matching the filters.
+func (s *LogService) CountFilteredLogs(c *gin.Context) (int64, error) {
+	var count int64
+	err := s.DB.Model(&models.RequestLog{}).Scopes(s.logFiltersScope(c)).Count(&count).Error
+	return count, err
+}
+
+// DeleteFilteredLogs physically deletes logs matching the filters.
+func (s *LogService) DeleteFilteredLogs(c *gin.Context) (int64, error) {
+	result := s.DB.Scopes(s.logFiltersScope(c)).Delete(&models.RequestLog{})
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return result.RowsAffected, nil
+}

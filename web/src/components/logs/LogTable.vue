@@ -14,6 +14,7 @@ import {
   ReloadOutline,
   Search,
   SettingsOutline,
+  TrashOutline,
 } from "@vicons/ionicons5";
 import {
   NButton,
@@ -33,6 +34,7 @@ import {
   NSpin,
   NTag,
   NTooltip,
+  useDialog,
   useMessage,
 } from "naive-ui";
 import { computed, h, onMounted, reactive, ref, watch, type VNodeChild } from "vue";
@@ -42,6 +44,7 @@ const { t } = useI18n();
 
 // Message instance
 const message = useMessage();
+const dialog = useDialog();
 
 interface LogRow extends RequestLog {
   is_key_visible: boolean;
@@ -452,6 +455,47 @@ const exportLogs = () => {
   logApi.exportLogs(params);
 };
 
+// 清空日志
+const clearLogs = () => {
+  const params: Omit<LogFilter, "page" | "page_size"> = {
+    parent_group_name: filters.parent_group_name || undefined,
+    group_name: filters.group_name || undefined,
+    key_value: filters.key_value || undefined,
+    model: filters.model || undefined,
+    is_success:
+      filters.is_success === "" || filters.is_success === null
+        ? undefined
+        : filters.is_success === "true",
+    status_code: filters.status_code ? parseInt(filters.status_code, 10) : undefined,
+    source_ip: filters.source_ip || undefined,
+    error_contains: filters.error_contains || undefined,
+    start_time: filters.start_time ? new Date(filters.start_time).toISOString() : undefined,
+    end_time: filters.end_time ? new Date(filters.end_time).toISOString() : undefined,
+    request_type: filters.request_type || undefined,
+  };
+
+  // 确认对话框
+  dialog.warning({
+    title: t("logs.clearLogsConfirm"),
+    content: t("logs.clearLogsWarning"),
+    positiveText: t("common.confirm"),
+    negativeText: t("common.cancel"),
+    onPositiveClick: async () => {
+      try {
+        const res = await logApi.clearLogs(params);
+        if (res.code === 0) {
+          message.success(res.message || t("logs.clearLogsSuccess"));
+          loadLogs(); // 重新加载日志列表
+        } else {
+          message.error(res.message || t("logs.clearLogsFailed"));
+        }
+      } catch (error) {
+        message.error(t("logs.clearLogsFailed"));
+      }
+    },
+  });
+};
+
 function changePage(page: number) {
   currentPage.value = page;
 }
@@ -603,6 +647,16 @@ const deselectAllColumns = () => {
                       </n-button>
                     </template>
                     {{ t("logs.exportLogs") }}
+                  </n-tooltip>
+                  <n-tooltip trigger="hover">
+                    <template #trigger>
+                      <n-button ghost type="error" @click="clearLogs">
+                        <template #icon>
+                          <n-icon :component="TrashOutline" />
+                        </template>
+                      </n-button>
+                    </template>
+                    {{ t("logs.clearLogs") }}
                   </n-tooltip>
                   <n-popover trigger="click" placement="bottom-end">
                     <template #trigger>
