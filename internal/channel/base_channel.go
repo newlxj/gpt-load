@@ -1,12 +1,12 @@
 package channel
 
 import (
+	"aimanager/internal/models"
+	"aimanager/internal/types"
+	"aimanager/internal/utils"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"gpt-load/internal/models"
-	"gpt-load/internal/types"
-	"gpt-load/internal/utils"
 	"net/http"
 	"net/url"
 	"reflect"

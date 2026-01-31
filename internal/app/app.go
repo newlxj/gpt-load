@@ -8,18 +8,18 @@ import (
 	"sync"
 	"time"
 
-	"gpt-load/internal/config"
-	db "gpt-load/internal/db/migrations"
-	"gpt-load/internal/handler"
-	"gpt-load/internal/i18n"
-	"gpt-load/internal/keypool"
-	"gpt-load/internal/models"
-	"gpt-load/internal/proxy"
-	"gpt-load/internal/router"
-	"gpt-load/internal/services"
-	"gpt-load/internal/store"
-	"gpt-load/internal/types"
-	"gpt-load/internal/version"
+	"aimanager/internal/config"
+	db "aimanager/internal/db/migrations"
+	"aimanager/internal/handler"
+	"aimanager/internal/i18n"
+	"aimanager/internal/keypool"
+	"aimanager/internal/models"
+	"aimanager/internal/proxy"
+	"aimanager/internal/router"
+	"aimanager/internal/services"
+	"aimanager/internal/store"
+	"aimanager/internal/types"
+	"aimanager/internal/version"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -88,7 +88,7 @@ func (a *App) Start() error {
 		return fmt.Errorf("failed to initialize i18n: %w", err)
 	}
 	logrus.Info("i18n initialized successfully.")
-	
+
 	// Master 节点执行初始化
 	if a.configManager.IsMaster() {
 		logrus.Info("Starting as Master Node.")
@@ -156,7 +156,7 @@ func (a *App) Start() error {
 
 	// Start main HTTP server in a new goroutine
 	go func() {
-		logrus.Infof("GPT-Load proxy server started successfully on Version: %s", version.Version)
+		logrus.Infof("aimanager proxy server started successfully on Version: %s", version.Version)
 		logrus.Infof("Internal server (full access): http://%s:%d", serverConfig.Host, serverConfig.Port)
 		if serverConfig.ProxyPort > 0 {
 			logrus.Infof("External proxy-only port: http://%s:%d", serverConfig.Host, serverConfig.ProxyPort)

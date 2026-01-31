@@ -1,11 +1,11 @@
 package services
 
 import (
+	"aimanager/internal/encryption"
+	"aimanager/internal/keypool"
+	"aimanager/internal/models"
 	"encoding/json"
 	"fmt"
-	"gpt-load/internal/encryption"
-	"gpt-load/internal/keypool"
-	"gpt-load/internal/models"
 	"io"
 	"regexp"
 	"strings"

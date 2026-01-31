@@ -15,7 +15,7 @@ export interface VersionInfo {
   status: "checking" | "latest" | "update-available" | "error";
 }
 
-const CACHE_KEY = "gpt-load-version-info";
+const CACHE_KEY = "aimanager-version-info";
 const CACHE_DURATION = 30 * 60 * 1000;
 
 class VersionService {
@@ -96,7 +96,7 @@ class VersionService {
   private async fetchLatestVersion(): Promise<GitHubRelease | null> {
     // try {
     //   const response = await axios.get(
-    //     "https://api.github.com/repos/tbphp/gpt-load/releases/latest",
+    //     "https://api.github.com/repos/tbphp/aimanager/releases/latest",
     //     {
     //       timeout: 10000,
     //       headers: {

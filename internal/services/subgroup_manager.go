@@ -1,9 +1,9 @@
 package services
 
 import (
+	"aimanager/internal/models"
+	"aimanager/internal/store"
 	"fmt"
-	"gpt-load/internal/models"
-	"gpt-load/internal/store"
 	"sync"
 
 	"github.com/sirupsen/logrus"

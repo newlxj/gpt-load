@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"gpt-load/internal/models"
+	"aimanager/internal/models"
 	"net/http"
 	"strconv"
 	"strings"

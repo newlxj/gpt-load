@@ -1,8 +1,8 @@
 package db
 
 import (
+	"aimanager/internal/types"
 	"fmt"
-	"gpt-load/internal/types"
 	"log"
 	"os"
 	"path/filepath"

@@ -1,4 +1,4 @@
-// Package main provides the entry point for the GPT-Load proxy server
+// Package main provides the entry point for the aimanager proxy server
 package main
 
 import (
@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	"gpt-load/internal/app"
-	"gpt-load/internal/commands"
-	"gpt-load/internal/container"
-	"gpt-load/internal/types"
-	"gpt-load/internal/utils"
+	"aimanager/internal/app"
+	"aimanager/internal/commands"
+	"aimanager/internal/container"
+	"aimanager/internal/types"
+	"aimanager/internal/utils"
 
 	"github.com/sirupsen/logrus"
 )
@@ -45,24 +45,24 @@ func runCommand() {
 		printHelp()
 	default:
 		fmt.Printf("Unknown command: %s\n", command)
-		fmt.Println("Run 'gpt-load help' for usage.")
+		fmt.Println("Run 'aimanager help' for usage.")
 		os.Exit(1)
 	}
 }
 
 // printHelp displays the general help information
 func printHelp() {
-	fmt.Println("GPT-Load - Multi-channel AI proxy with intelligent key rotation.")
+	fmt.Println("aimanager - Multi-channel AI proxy with intelligent key rotation.")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  gpt-load                    Start the proxy server")
-	fmt.Println("  gpt-load <command> [args]   Execute a command")
+	fmt.Println("  aimanager                    Start the proxy server")
+	fmt.Println("  aimanager <command> [args]   Execute a command")
 	fmt.Println()
 	fmt.Println("Available Commands:")
 	fmt.Println("  migrate-keys    Migrate encryption keys")
 	fmt.Println("  help            Display this help message")
 	fmt.Println()
-	fmt.Println("Use 'gpt-load <command> --help' for more information about a command.")
+	fmt.Println("Use 'aimanager <command> --help' for more information about a command.")
 }
 
 // runServer run App Server

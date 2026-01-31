@@ -1,10 +1,10 @@
 {
-  "name": "gpt-load-frontend",
+  "name": "aimanager-frontend",
   "private": true,
   "version": "0.1.0",
   "description": "GPT Load Balancer Frontend - A modern Vue 3 frontend for GPT load balancing service",
   "type": "module",
-  "keywords": ["vue3", "typescript", "vite", "naive-ui", "gpt-load", "frontend"],
+  "keywords": ["vue3", "typescript", "vite", "naive-ui", "aimanager", "frontend"],
   "author": "tbphp",
   "license": "MIT",
   "repository": {

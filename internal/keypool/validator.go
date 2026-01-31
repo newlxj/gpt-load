@@ -1,12 +1,12 @@
 package keypool
 
 import (
+	"aimanager/internal/channel"
+	"aimanager/internal/config"
+	"aimanager/internal/encryption"
+	"aimanager/internal/models"
 	"context"
 	"fmt"
-	"gpt-load/internal/channel"
-	"gpt-load/internal/config"
-	"gpt-load/internal/encryption"
-	"gpt-load/internal/models"
 	"time"
 
 	"github.com/sirupsen/logrus"

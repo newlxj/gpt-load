@@ -1,9 +1,9 @@
 package services
 
 import (
+	"aimanager/internal/config"
+	"aimanager/internal/models"
 	"context"
-	"gpt-load/internal/config"
-	"gpt-load/internal/models"
 	"sync"
 	"time"
 

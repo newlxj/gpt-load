@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"gpt-load/internal/types"
+	"aimanager/internal/types"
 
 	"github.com/sirupsen/logrus"
 )

@@ -1,13 +1,13 @@
 package channel
 
 import (
+	app_errors "aimanager/internal/errors"
+	"aimanager/internal/models"
+	"aimanager/internal/utils"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	app_errors "gpt-load/internal/errors"
-	"gpt-load/internal/models"
-	"gpt-load/internal/utils"
 	"io"
 	"net/http"
 	"net/url"

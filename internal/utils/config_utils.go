@@ -1,9 +1,9 @@
 package utils
 
 import (
+	"aimanager/internal/models"
+	"aimanager/internal/types"
 	"fmt"
-	"gpt-load/internal/models"
-	"gpt-load/internal/types"
 	"os"
 	"reflect"
 	"strconv"

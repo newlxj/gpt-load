@@ -1,17 +1,17 @@
-# GPT-Load
+# aimanager
 
 [English](README.md) | 中文 | [日本語](README_JP.md)
 
-[![Release](https://img.shields.io/github/v/release/tbphp/gpt-load)](https://github.com/tbphp/gpt-load/releases)
+[![Release](https://img.shields.io/github/v/release/tbphp/aimanager)](https://github.com/tbphp/aimanager/releases)
 ![Go Version](https://img.shields.io/badge/Go-1.23+-blue.svg)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 一个高性能、企业级的 AI 接口透明代理服务，专门为需要集成多种 AI 服务的企业和开发者设计。采用 Go 语言开发，具备智能密钥管理、负载均衡和完善的监控功能，专为高并发生产环境而设计。
 
-详细请查看[官方文档](https://www.gpt-load.com/docs?lang=zh)
+详细请查看[官方文档](https://www.aimanager.com/docs?lang=zh)
 
-<a href="https://trendshift.io/repositories/14880" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14880" alt="tbphp%2Fgpt-load | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-<a href="https://hellogithub.com/repository/tbphp/gpt-load" target="_blank"><img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=554dc4c46eb14092b9b0c56f1eb9021c&claim_uid=Qlh8vzrWJ0HCneG" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+<a href="https://trendshift.io/repositories/14880" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14880" alt="tbphp%2Faimanager | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+<a href="https://hellogithub.com/repository/tbphp/aimanager" target="_blank"><img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=554dc4c46eb14092b9b0c56f1eb9021c&claim_uid=Qlh8vzrWJ0HCneG" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 ## 功能特性
 
@@ -29,7 +29,7 @@
 
 ## 支持的 AI 服务
 
-GPT-Load 作为透明代理服务，完整保留各 AI 服务商的原生 API 格式：
+aimanager 作为透明代理服务，完整保留各 AI 服务商的原生 API 格式：
 
 - **OpenAI 格式**: 官方 OpenAI API、Azure OpenAI、以及其他 OpenAI 兼容服务
 - **Google Gemini 格式**: Gemini Pro、Gemini Pro Vision 等模型的原生 API
@@ -47,11 +47,11 @@ GPT-Load 作为透明代理服务，完整保留各 AI 服务商的原生 API �
 ### 方式一：Docker 快速开始
 
 ```bash
-docker run -d --name gpt-load \
+docker run -d --name aimanager \
     -p 3001:3001 \
     -e AUTH_KEY=your-secure-key-here \
     -v "$(pwd)/data":/app/data \
-    ghcr.io/tbphp/gpt-load:latest
+    ghcr.io/tbphp/aimanager:latest
 ```
 
 > 请将 `your-secure-key-here` 改为强密码（决不能使用默认值），即可登录管理界面：<http://localhost:3001>
@@ -62,11 +62,11 @@ docker run -d --name gpt-load \
 
 ```bash
 # 创建目录
-mkdir -p gpt-load && cd gpt-load
+mkdir -p aimanager && cd aimanager
 
 # 下载配置文件
-wget https://raw.githubusercontent.com/tbphp/gpt-load/refs/heads/main/docker-compose.yml
-wget -O .env https://raw.githubusercontent.com/tbphp/gpt-load/refs/heads/main/.env.example
+wget https://raw.githubusercontent.com/tbphp/aimanager/refs/heads/main/docker-compose.yml
+wget -O .env https://raw.githubusercontent.com/tbphp/aimanager/refs/heads/main/.env.example
 
 # 编辑 .env 文件，修改AUTH_KEY为强密码，绝不使用 sk-123456 等默认或者简单密钥
 
@@ -109,8 +109,8 @@ docker compose pull && docker compose down && docker compose up -d
 
 ```bash
 # 克隆并构建
-git clone https://github.com/tbphp/gpt-load.git
-cd gpt-load
+git clone https://github.com/tbphp/aimanager.git
+cd aimanager
 go mod tidy
 
 # 创建配置
@@ -140,13 +140,13 @@ make run
 - 所有节点必须配置相同的 `AUTH_KEY`、`DATABASE_DSN`、`REDIS_DSN`
 - 一主多从架构，从节点必须配置环境变量：`IS_SLAVE=true`
 
-详细请参考[集群部署文档](https://www.gpt-load.com/docs/cluster?lang=zh)
+详细请参考[集群部署文档](https://www.aimanager.com/docs/cluster?lang=zh)
 
 ## 配置系统
 
 ### 配置架构概述
 
-GPT-Load 采用双层配置架构：
+aimanager 采用双层配置架构：
 
 #### 1. 静态配置（环境变量）
 
@@ -179,24 +179,24 @@ GPT-Load 采用双层配置架构：
 
 **安全配置：**
 
-| 配置项   | 环境变量        | 默认值 | 说明                                                                 |
-| -------- | --------------- | ------ | -------------------------------------------------------------------- |
-| 管理密钥 | `AUTH_KEY`      | -      | **管理端**的访问认证密钥，请修改为强密码                             |
-| 加密密钥 | `ENCRYPTION_KEY`| -      | 加密存储的API密钥，支持任意字符串或留空禁用加密。参见[数据加密迁移](#数据加密迁移) |
+| 配置项   | 环境变量         | 默认值 | 说明                                                                               |
+| -------- | ---------------- | ------ | ---------------------------------------------------------------------------------- |
+| 管理密钥 | `AUTH_KEY`       | -      | **管理端**的访问认证密钥，请修改为强密码                                           |
+| 加密密钥 | `ENCRYPTION_KEY` | -      | 加密存储的API密钥，支持任意字符串或留空禁用加密。参见[数据加密迁移](#数据加密迁移) |
 
 **数据库配置：**
 
-| 配置项     | 环境变量       | 默认值             | 说明                                 |
-| ---------- | -------------- | ------------------ | ------------------------------------ |
-| 数据库连接 | `DATABASE_DSN` | ./data/gpt-load.db | 数据库连接字符串 (DSN) 或文件路径    |
-| Redis 连接 | `REDIS_DSN`    | -                  | Redis 连接字符串，为空时使用内存存储 |
+| 配置项     | 环境变量       | 默认值              | 说明                                 |
+| ---------- | -------------- | ------------------- | ------------------------------------ |
+| 数据库连接 | `DATABASE_DSN` | ./data/aimanager.db | 数据库连接字符串 (DSN) 或文件路径    |
+| Redis 连接 | `REDIS_DSN`    | -                   | Redis 连接字符串，为空时使用内存存储 |
 
 **性能与跨域配置：**
 
 | 配置项       | 环境变量                  | 默认值                        | 说明                     |
 | ------------ | ------------------------- | ----------------------------- | ------------------------ |
 | 最大并发请求 | `MAX_CONCURRENT_REQUESTS` | 100                           | 系统允许的最大并发请求数 |
-| 启用 CORS    | `ENABLE_CORS`             | false                          | 是否启用跨域资源共享     |
+| 启用 CORS    | `ENABLE_CORS`             | false                         | 是否启用跨域资源共享     |
 | 允许的来源   | `ALLOWED_ORIGINS`         | -                             | 允许的来源，逗号分隔     |
 | 允许的方法   | `ALLOWED_METHODS`         | `GET,POST,PUT,DELETE,OPTIONS` | 允许的 HTTP 方法         |
 | 允许的头部   | `ALLOWED_HEADERS`         | `*`                           | 允许的请求头，逗号分隔   |
@@ -213,7 +213,7 @@ GPT-Load 采用双层配置架构：
 
 **代理配置：**
 
-GPT-Load 会自动从环境变量中读取代理设置，用于向上游 AI 服务商发起请求。
+aimanager 会自动从环境变量中读取代理设置，用于向上游 AI 服务商发起请求。
 
 | 配置项     | 环境变量      | 默认值 | 说明                                     |
 | ---------- | ------------- | ------ | ---------------------------------------- |
@@ -233,24 +233,24 @@ GPT-Load 会自动从环境变量中读取代理设置，用于向上游 AI 服�
 
 **基础设置：**
 
-| 配置项       | 字段名                               | 默认值                      | 分组可覆盖 | 说明                                   |
-| ------------ | ------------------------------------ | --------------------------- | ---------- | -------------------------------------- |
-| 项目地址     | `app_url`                            | `http://localhost:3001`     | ❌         | 项目基础 URL                           |
-| 全局代理密钥 | `proxy_keys`                         | 初始值为环境配置的 AUTH_KEY | ❌         | 全局生效的代理认证密钥，多个用逗号分隔 |
-| 日志保留天数 | `request_log_retention_days`         | 7                           | ❌         | 请求日志保留天数，0 为不清理           |
-| 日志写入间隔 | `request_log_write_interval_minutes` | 1                           | ❌         | 日志写入数据库周期（分钟）             |
+| 配置项       | 字段名                               | 默认值                      | 分组可覆盖 | 说明                                                           |
+| ------------ | ------------------------------------ | --------------------------- | ---------- | -------------------------------------------------------------- |
+| 项目地址     | `app_url`                            | `http://localhost:3001`     | ❌         | 项目基础 URL                                                   |
+| 全局代理密钥 | `proxy_keys`                         | 初始值为环境配置的 AUTH_KEY | ❌         | 全局生效的代理认证密钥，多个用逗号分隔                         |
+| 日志保留天数 | `request_log_retention_days`         | 7                           | ❌         | 请求日志保留天数，0 为不清理                                   |
+| 日志写入间隔 | `request_log_write_interval_minutes` | 1                           | ❌         | 日志写入数据库周期（分钟）                                     |
 | 启用日志详情 | `enable_request_body_logging`        | false                       | ✅         | 是否在请求日志中记录完整的请求体内容，启用会增加内存和存储占用 |
 
 **请求设置：**
 
-| 配置项               | 字段名                    | 默认值 | 分组可覆盖 | 说明                           |
-| -------------------- | ------------------------- | ------ | ---------- | ------------------------------ |
-| 请求超时             | `request_timeout`         | 600    | ✅         | 转发请求完整生命周期超时（秒） |
-| 连接超时             | `connect_timeout`         | 15     | ✅         | 与上游服务建立连接超时（秒）   |
-| 空闲连接超时         | `idle_conn_timeout`       | 120    | ✅         | HTTP 客户端空闲连接超时（秒）  |
-| 响应头超时           | `response_header_timeout` | 600    | ✅         | 等待上游响应头超时（秒）       |
-| 最大空闲连接数       | `max_idle_conns`          | 100    | ✅         | 连接池最大空闲连接总数         |
-| 每主机最大空闲连接数 | `max_idle_conns_per_host` | 50     | ✅         | 每个上游主机最大空闲连接数     |
+| 配置项               | 字段名                    | 默认值 | 分组可覆盖 | 说明                                               |
+| -------------------- | ------------------------- | ------ | ---------- | -------------------------------------------------- |
+| 请求超时             | `request_timeout`         | 600    | ✅         | 转发请求完整生命周期超时（秒）                     |
+| 连接超时             | `connect_timeout`         | 15     | ✅         | 与上游服务建立连接超时（秒）                       |
+| 空闲连接超时         | `idle_conn_timeout`       | 120    | ✅         | HTTP 客户端空闲连接超时（秒）                      |
+| 响应头超时           | `response_header_timeout` | 600    | ✅         | 等待上游响应头超时（秒）                           |
+| 最大空闲连接数       | `max_idle_conns`          | 100    | ✅         | 连接池最大空闲连接总数                             |
+| 每主机最大空闲连接数 | `max_idle_conns_per_host` | 50     | ✅         | 每个上游主机最大空闲连接数                         |
 | 代理服务器地址       | `proxy_url`               | -      | ✅         | 用于转发请求的 HTTP/HTTPS 代理，为空则使用环境配置 |
 
 **密钥配置：**
@@ -267,7 +267,7 @@ GPT-Load 会自动从环境变量中读取代理设置，用于向上游 AI 服�
 
 ## 数据加密迁移
 
-GPT-Load 支持对 API 密钥进行加密存储。您可以随时启用、禁用或更换加密密钥。
+aimanager 支持对 API 密钥进行加密存储。您可以随时启用、禁用或更换加密密钥。
 
 <details>
 <summary>查看数据加密迁移详细说明</summary>
@@ -294,13 +294,13 @@ docker compose down
 
 # 4. 执行迁移命令
 # 启用加密（your-32-char-secret-key 为你的密钥，建议使用32位以上的随机字符串）
-docker compose run --rm gpt-load migrate-keys --to "your-32-char-secret-key"
+docker compose run --rm aimanager migrate-keys --to "your-32-char-secret-key"
 
 # 禁用加密
-docker compose run --rm gpt-load migrate-keys --from "your-current-key"
+docker compose run --rm aimanager migrate-keys --from "your-current-key"
 
 # 更换密钥
-docker compose run --rm gpt-load migrate-keys --from "old-key" --to "new-32-char-secret-key"
+docker compose run --rm aimanager migrate-keys --from "old-key" --to "new-32-char-secret-key"
 
 # 5. 更新配置文件
 # 编辑 .env 文件，设置 ENCRYPTION_KEY 与 --to 参数一致
@@ -342,6 +342,7 @@ make run
 ### 注意事项
 
 ⚠️ **重要提醒**：
+
 - **ENCRYPTION_KEY 一旦丢失将无法恢复已加密的数据！** 请务必安全备份此密钥，建议使用密码管理器或安全的密钥管理系统保存
 - 迁移前**必须停止服务**，避免数据不一致
 - 强烈建议**备份数据库**，以防迁移失败需要恢复
@@ -384,7 +385,7 @@ Web 管理界面提供以下功能：
 <details>
 <summary>代理接口调用方式</summary>
 
-GPT-Load 通过分组名称路由请求到不同的 AI 服务。使用方式如下：
+aimanager 通过分组名称路由请求到不同的 AI 服务。使用方式如下：
 
 ### 1. 代理端点格式
 
@@ -555,7 +556,7 @@ response = client.messages.create(
 )
 ```
 
-> **重要提示**：作为透明代理服务，GPT-Load 完全保留各 AI 服务的原生 API 格式和认证方式，仅需要替换端点地址并使用在管理端配置的**代理密钥**即可无缝迁移。
+> **重要提示**：作为透明代理服务，aimanager 完全保留各 AI 服务的原生 API 格式和认证方式，仅需要替换端点地址并使用在管理端配置的**代理密钥**即可无缝迁移。
 
 </details>
 
@@ -565,9 +566,9 @@ response = client.messages.create(
 
 ## 贡献
 
-感谢所有为 GPT-Load 做出贡献的开发者们！
+感谢所有为 aimanager 做出贡献的开发者们！
 
-[![Contributors](https://contrib.rocks/image?repo=tbphp/gpt-load)](https://github.com/tbphp/gpt-load/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=tbphp/aimanager)](https://github.com/tbphp/aimanager/graphs/contributors)
 
 ## 许可证
 
@@ -575,4 +576,4 @@ MIT 许可证 - 详情请参阅 [LICENSE](LICENSE) 文件。
 
 ## Star History
 
-[![Stargazers over time](https://starchart.cc/tbphp/gpt-load.svg?variant=adaptive)](https://starchart.cc/tbphp/gpt-load)
+[![Stargazers over time](https://starchart.cc/tbphp/aimanager.svg?variant=adaptive)](https://starchart.cc/tbphp/aimanager)

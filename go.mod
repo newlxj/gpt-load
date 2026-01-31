@@ -1,4 +1,4 @@
-module gpt-load
+module aimanager
 
 go 1.23.0
 

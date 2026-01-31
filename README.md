@@ -1,17 +1,17 @@
-# GPT-Load
+# aimanager
 
 English | [中文](README_CN.md) | [日本語](README_JP.md)
 
-[![Release](https://img.shields.io/github/v/release/tbphp/gpt-load)](https://github.com/tbphp/gpt-load/releases)
+[![Release](https://img.shields.io/github/v/release/tbphp/aimanager)](https://github.com/tbphp/aimanager/releases)
 ![Go Version](https://img.shields.io/badge/Go-1.23+-blue.svg)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A high-performance, enterprise-grade AI API transparent proxy service designed specifically for enterprises and developers who need to integrate multiple AI services. Built with Go, featuring intelligent key management, load balancing, and comprehensive monitoring capabilities, designed for high-concurrency production environments.
 
-For detailed documentation, please visit [Official Documentation](https://www.gpt-load.com/docs?lang=en)
+For detailed documentation, please visit [Official Documentation](https://www.aimanager.com/docs?lang=en)
 
-<a href="https://trendshift.io/repositories/14880" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14880" alt="tbphp%2Fgpt-load | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-<a href="https://hellogithub.com/repository/tbphp/gpt-load" target="_blank"><img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=554dc4c46eb14092b9b0c56f1eb9021c&claim_uid=Qlh8vzrWJ0HCneG" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+<a href="https://trendshift.io/repositories/14880" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14880" alt="tbphp%2Faimanager | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+<a href="https://hellogithub.com/repository/tbphp/aimanager" target="_blank"><img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=554dc4c46eb14092b9b0c56f1eb9021c&claim_uid=Qlh8vzrWJ0HCneG" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 ## Features
 
@@ -29,7 +29,7 @@ For detailed documentation, please visit [Official Documentation](https://www.gp
 
 ## Supported AI Services
 
-GPT-Load serves as a transparent proxy service, completely preserving the native API formats of various AI service providers:
+aimanager serves as a transparent proxy service, completely preserving the native API formats of various AI service providers:
 
 - **OpenAI Format**: Official OpenAI API, Azure OpenAI, and other OpenAI-compatible services
 - **Google Gemini Format**: Native APIs for Gemini Pro, Gemini Pro Vision, and other models
@@ -47,11 +47,11 @@ GPT-Load serves as a transparent proxy service, completely preserving the native
 ### Method 1: Docker Quick Start
 
 ```bash
-docker run -d --name gpt-load \
+docker run -d --name aimanager \
     -p 3001:3001 \
     -e AUTH_KEY=your-secure-key-here \
     -v "$(pwd)/data":/app/data \
-    ghcr.io/tbphp/gpt-load:latest
+    ghcr.io/tbphp/aimanager:latest
 ```
 
 > Please change `your-secure-key-here` to a strong password (never use the default value), then you can log in to the management interface: <http://localhost:3001>
@@ -62,11 +62,11 @@ docker run -d --name gpt-load \
 
 ```bash
 # Create Directory
-mkdir -p gpt-load && cd gpt-load
+mkdir -p aimanager && cd aimanager
 
 # Download configuration files
-wget https://raw.githubusercontent.com/tbphp/gpt-load/refs/heads/main/docker-compose.yml
-wget -O .env https://raw.githubusercontent.com/tbphp/gpt-load/refs/heads/main/.env.example
+wget https://raw.githubusercontent.com/tbphp/aimanager/refs/heads/main/docker-compose.yml
+wget -O .env https://raw.githubusercontent.com/tbphp/aimanager/refs/heads/main/.env.example
 
 # Edit the .env file and change AUTH_KEY to a strong password. Never use default or simple keys like sk-123456.
 
@@ -109,8 +109,8 @@ Source build requires a locally installed database (SQLite, MySQL, or PostgreSQL
 
 ```bash
 # Clone and build
-git clone https://github.com/tbphp/gpt-load.git
-cd gpt-load
+git clone https://github.com/tbphp/aimanager.git
+cd aimanager
 go mod tidy
 
 # Create configuration
@@ -140,13 +140,13 @@ Cluster deployment requires all nodes to connect to the same MySQL (or PostgreSQ
 - All nodes must configure identical `AUTH_KEY`, `DATABASE_DSN`, `REDIS_DSN`
 - Leader-follower architecture where follower nodes must configure environment variable: `IS_SLAVE=true`
 
-For details, please refer to [Cluster Deployment Documentation](https://www.gpt-load.com/docs/cluster?lang=en)
+For details, please refer to [Cluster Deployment Documentation](https://www.aimanager.com/docs/cluster?lang=en)
 
 ## Configuration System
 
 ### Configuration Architecture Overview
 
-GPT-Load adopts a dual-layer configuration architecture:
+aimanager adopts a dual-layer configuration architecture:
 
 #### 1. Static Configuration (Environment Variables)
 
@@ -179,24 +179,24 @@ GPT-Load adopts a dual-layer configuration architecture:
 
 **Security Configuration:**
 
-| Setting        | Environment Variable | Default | Description                                                                       |
-| -------------- | -------------------- | ------- | --------------------------------------------------------------------------------- |
-| Admin Key      | `AUTH_KEY`           | -       | Access authentication key for the **management end**, please change it to a strong password |
+| Setting        | Environment Variable | Default | Description                                                                                                                                      |
+| -------------- | -------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Admin Key      | `AUTH_KEY`           | -       | Access authentication key for the **management end**, please change it to a strong password                                                      |
 | Encryption Key | `ENCRYPTION_KEY`     | -       | Encrypts API keys at rest. Supports any string or leave empty to disable encryption. See [Data Encryption Migration](#data-encryption-migration) |
 
 **Database Configuration:**
 
-| Setting             | Environment Variable | Default              | Description                                         |
-| ------------------- | -------------------- | -------------------- | --------------------------------------------------- |
-| Database Connection | `DATABASE_DSN`       | `./data/gpt-load.db` | Database connection string (DSN) or file path       |
-| Redis Connection    | `REDIS_DSN`          | -                    | Redis connection string, uses memory storage when empty |
+| Setting             | Environment Variable | Default               | Description                                             |
+| ------------------- | -------------------- | --------------------- | ------------------------------------------------------- |
+| Database Connection | `DATABASE_DSN`       | `./data/aimanager.db` | Database connection string (DSN) or file path           |
+| Redis Connection    | `REDIS_DSN`          | -                     | Redis connection string, uses memory storage when empty |
 
 **Performance & CORS Configuration:**
 
 | Setting                 | Environment Variable      | Default                       | Description                                     |
 | ----------------------- | ------------------------- | ----------------------------- | ----------------------------------------------- |
 | Max Concurrent Requests | `MAX_CONCURRENT_REQUESTS` | 100                           | Maximum concurrent requests allowed by system   |
-| Enable CORS             | `ENABLE_CORS`             | false                          | Whether to enable Cross-Origin Resource Sharing |
+| Enable CORS             | `ENABLE_CORS`             | false                         | Whether to enable Cross-Origin Resource Sharing |
 | Allowed Origins         | `ALLOWED_ORIGINS`         | -                             | Allowed origins, comma-separated                |
 | Allowed Methods         | `ALLOWED_METHODS`         | `GET,POST,PUT,DELETE,OPTIONS` | Allowed HTTP methods                            |
 | Allowed Headers         | `ALLOWED_HEADERS`         | `*`                           | Allowed request headers, comma-separated        |
@@ -213,12 +213,12 @@ GPT-Load adopts a dual-layer configuration architecture:
 
 **Proxy Configuration:**
 
-GPT-Load automatically reads proxy settings from environment variables to make requests to upstream AI providers.
+aimanager automatically reads proxy settings from environment variables to make requests to upstream AI providers.
 
-| Setting     | Environment Variable | Default | Description                                     |
-| ----------- | -------------------- | ------- | ----------------------------------------------- |
-| HTTP Proxy  | `HTTP_PROXY`         | -       | Proxy server address for HTTP requests          |
-| HTTPS Proxy | `HTTPS_PROXY`        | -       | Proxy server address for HTTPS requests         |
+| Setting     | Environment Variable | Default | Description                                                  |
+| ----------- | -------------------- | ------- | ------------------------------------------------------------ |
+| HTTP Proxy  | `HTTP_PROXY`         | -       | Proxy server address for HTTP requests                       |
+| HTTPS Proxy | `HTTPS_PROXY`        | -       | Proxy server address for HTTPS requests                      |
 | No Proxy    | `NO_PROXY`           | -       | Comma-separated list of hosts or domains to bypass the proxy |
 
 Supported Proxy Protocol Formats:
@@ -233,13 +233,13 @@ Supported Proxy Protocol Formats:
 
 **Basic Settings:**
 
-| Setting            | Field Name                           | Default                 | Group Override | Description                                  |
-| ------------------ | ------------------------------------ | ----------------------- | -------------- | -------------------------------------------- |
-| Project URL        | `app_url`                            | `http://localhost:3001` | ❌             | Project base URL                             |
-| Global Proxy Keys  | `proxy_keys`                         | Initial value from `AUTH_KEY` | ❌         | Globally effective proxy keys, comma-separated |
-| Log Retention Days | `request_log_retention_days`         | 7                       | ❌             | Request log retention days, 0 for no cleanup |
-| Log Write Interval | `request_log_write_interval_minutes` | 1                       | ❌             | Log write to database cycle (minutes)        |
-| Enable Request Body Logging | `enable_request_body_logging` | false | ✅ | Whether to log complete request body content in request logs |
+| Setting                     | Field Name                           | Default                       | Group Override | Description                                                  |
+| --------------------------- | ------------------------------------ | ----------------------------- | -------------- | ------------------------------------------------------------ |
+| Project URL                 | `app_url`                            | `http://localhost:3001`       | ❌             | Project base URL                                             |
+| Global Proxy Keys           | `proxy_keys`                         | Initial value from `AUTH_KEY` | ❌             | Globally effective proxy keys, comma-separated               |
+| Log Retention Days          | `request_log_retention_days`         | 7                             | ❌             | Request log retention days, 0 for no cleanup                 |
+| Log Write Interval          | `request_log_write_interval_minutes` | 1                             | ❌             | Log write to database cycle (minutes)                        |
+| Enable Request Body Logging | `enable_request_body_logging`        | false                         | ✅             | Whether to log complete request body content in request logs |
 
 **Request Settings:**
 
@@ -267,7 +267,7 @@ Supported Proxy Protocol Formats:
 
 ## Data Encryption Migration
 
-GPT-Load supports encrypted storage of API keys. You can enable, disable, or change the encryption key at any time.
+aimanager supports encrypted storage of API keys. You can enable, disable, or change the encryption key at any time.
 
 <details>
 <summary>View Data Encryption Migration Details</summary>
@@ -294,13 +294,13 @@ docker compose down
 
 # 4. Execute migration command
 # Enable encryption (your-32-char-secret-key is your key, recommend using 32+ character random string)
-docker compose run --rm gpt-load migrate-keys --to "your-32-char-secret-key"
+docker compose run --rm aimanager migrate-keys --to "your-32-char-secret-key"
 
 # Disable encryption
-docker compose run --rm gpt-load migrate-keys --from "your-current-key"
+docker compose run --rm aimanager migrate-keys --from "your-current-key"
 
 # Change encryption key
-docker compose run --rm gpt-load migrate-keys --from "old-key" --to "new-32-char-secret-key"
+docker compose run --rm aimanager migrate-keys --from "old-key" --to "new-32-char-secret-key"
 
 # 5. Update configuration file
 # Edit .env file, set ENCRYPTION_KEY to match the --to parameter
@@ -342,6 +342,7 @@ make run
 ### Important Notes
 
 ⚠️ **Important Reminders**:
+
 - **Once ENCRYPTION_KEY is lost, encrypted data CANNOT be recovered!** Please securely backup this key. Consider using a password manager or secure key management system
 - **Service must be stopped** before migration to avoid data inconsistency
 - Strongly recommended to **backup the database** in case migration fails and recovery is needed
@@ -384,7 +385,7 @@ The web management interface provides the following features:
 <details>
 <summary>Proxy Interface Invocation</summary>
 
-GPT-Load routes requests to different AI services through group names. Usage is as follows:
+aimanager routes requests to different AI services through group names. Usage is as follows:
 
 ### 1. Proxy Endpoint Format
 
@@ -555,7 +556,7 @@ response = client.messages.create(
 )
 ```
 
-> **Important Note**: As a transparent proxy service, GPT-Load completely preserves the native API formats and authentication methods of various AI services. You only need to replace the endpoint address and use the **Proxy Key** configured in the management interface for seamless migration.
+> **Important Note**: As a transparent proxy service, aimanager completely preserves the native API formats and authentication methods of various AI services. You only need to replace the endpoint address and use the **Proxy Key** configured in the management interface for seamless migration.
 
 </details>
 
@@ -565,9 +566,9 @@ response = client.messages.create(
 
 ## Contributing
 
-Thanks to all the developers who have contributed to GPT-Load!
+Thanks to all the developers who have contributed to aimanager!
 
-[![Contributors](https://contrib.rocks/image?repo=tbphp/gpt-load)](https://github.com/tbphp/gpt-load/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=tbphp/aimanager)](https://github.com/tbphp/aimanager/graphs/contributors)
 
 ## License
 
@@ -575,4 +576,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Star History
 
-[![Stargazers over time](https://starchart.cc/tbphp/gpt-load.svg?variant=adaptive)](https://starchart.cc/tbphp/gpt-load)
+[![Stargazers over time](https://starchart.cc/tbphp/aimanager.svg?variant=adaptive)](https://starchart.cc/tbphp/aimanager)

@@ -1,13 +1,13 @@
 package keypool
 
 import (
+	"aimanager/internal/config"
+	"aimanager/internal/encryption"
+	app_errors "aimanager/internal/errors"
+	"aimanager/internal/models"
+	"aimanager/internal/store"
 	"errors"
 	"fmt"
-	"gpt-load/internal/config"
-	"gpt-load/internal/encryption"
-	app_errors "gpt-load/internal/errors"
-	"gpt-load/internal/models"
-	"gpt-load/internal/store"
 	"math/rand"
 	"strconv"
 	"strings"

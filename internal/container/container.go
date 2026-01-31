@@ -2,19 +2,19 @@
 package container
 
 import (
-	"gpt-load/internal/app"
-	"gpt-load/internal/channel"
-	"gpt-load/internal/config"
-	"gpt-load/internal/db"
-	"gpt-load/internal/encryption"
-	"gpt-load/internal/handler"
-	"gpt-load/internal/httpclient"
-	"gpt-load/internal/keypool"
-	"gpt-load/internal/proxy"
-	"gpt-load/internal/router"
-	"gpt-load/internal/services"
-	"gpt-load/internal/store"
-	"gpt-load/internal/types"
+	"aimanager/internal/app"
+	"aimanager/internal/channel"
+	"aimanager/internal/config"
+	"aimanager/internal/db"
+	"aimanager/internal/encryption"
+	"aimanager/internal/handler"
+	"aimanager/internal/httpclient"
+	"aimanager/internal/keypool"
+	"aimanager/internal/proxy"
+	"aimanager/internal/router"
+	"aimanager/internal/services"
+	"aimanager/internal/store"
+	"aimanager/internal/types"
 
 	"go.uber.org/dig"
 )

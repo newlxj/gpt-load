@@ -1,10 +1,10 @@
 package handler
 
 import (
+	app_errors "aimanager/internal/errors"
+	"aimanager/internal/models"
+	"aimanager/internal/response"
 	"fmt"
-	app_errors "gpt-load/internal/errors"
-	"gpt-load/internal/models"
-	"gpt-load/internal/response"
 	"io"
 	"log"
 	"path/filepath"

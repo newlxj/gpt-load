@@ -1,14 +1,14 @@
 package services
 
 import (
+	"aimanager/internal/config"
+	"aimanager/internal/models"
+	"aimanager/internal/store"
+	"aimanager/internal/syncer"
+	"aimanager/internal/utils"
 	"context"
 	"encoding/json"
 	"fmt"
-	"gpt-load/internal/config"
-	"gpt-load/internal/models"
-	"gpt-load/internal/store"
-	"gpt-load/internal/syncer"
-	"gpt-load/internal/utils"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

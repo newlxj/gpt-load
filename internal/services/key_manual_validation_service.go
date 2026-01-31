@@ -1,12 +1,12 @@
 package services
 
 import (
+	"aimanager/internal/config"
+	"aimanager/internal/encryption"
+	"aimanager/internal/keypool"
+	"aimanager/internal/models"
+	"aimanager/internal/types"
 	"fmt"
-	"gpt-load/internal/config"
-	"gpt-load/internal/encryption"
-	"gpt-load/internal/keypool"
-	"gpt-load/internal/models"
-	"gpt-load/internal/types"
 	"sync"
 	"time"
 

@@ -1,10 +1,10 @@
 package services
 
 import (
+	"aimanager/internal/store"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gpt-load/internal/store"
 	"time"
 )
 

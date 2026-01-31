@@ -1,12 +1,12 @@
 package services
 
 import (
+	"aimanager/internal/config"
+	"aimanager/internal/models"
+	"aimanager/internal/store"
 	"context"
 	"encoding/json"
 	"fmt"
-	"gpt-load/internal/config"
-	"gpt-load/internal/models"
-	"gpt-load/internal/store"
 	"strings"
 	"sync"
 	"time"

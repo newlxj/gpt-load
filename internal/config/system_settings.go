@@ -1,15 +1,15 @@
 package config
 
 import (
+	"aimanager/internal/db"
+	"aimanager/internal/models"
+	"aimanager/internal/store"
+	"aimanager/internal/syncer"
+	"aimanager/internal/types"
+	"aimanager/internal/utils"
 	"context"
 	"encoding/json"
 	"fmt"
-	"gpt-load/internal/db"
-	"gpt-load/internal/models"
-	"gpt-load/internal/store"
-	"gpt-load/internal/syncer"
-	"gpt-load/internal/types"
-	"gpt-load/internal/utils"
 	"os"
 	"reflect"
 	"strconv"

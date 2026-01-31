@@ -1,11 +1,11 @@
 package proxy
 
 import (
+	app_errors "aimanager/internal/errors"
+	"aimanager/internal/models"
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	app_errors "gpt-load/internal/errors"
-	"gpt-load/internal/models"
 	"io"
 	"net/http"
 

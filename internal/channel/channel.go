@@ -1,8 +1,8 @@
 package channel
 
 import (
+	"aimanager/internal/models"
 	"context"
-	"gpt-load/internal/models"
 	"net/http"
 	"net/url"
 
