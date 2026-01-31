@@ -81,7 +81,9 @@ func (m *Manager) ReloadConfig() error {
 			GracefulShutdownTimeout: utils.ParseInteger(os.Getenv("SERVER_GRACEFUL_SHUTDOWN_TIMEOUT"), 10),
 		},
 		Auth: types.AuthConfig{
-			Key: os.Getenv("AUTH_KEY"),
+			Key:             os.Getenv("AUTH_KEY"),
+			MaxFailedAttempts: utils.ParseInteger(os.Getenv("LOGIN_MAX_FAILED_ATTEMPTS"), 10),
+			LockoutDuration:    utils.ParseInteger(os.Getenv("LOGIN_LOCKOUT_DURATION"), 300),
 		},
 		CORS: types.CORSConfig{
 			Enabled:          utils.ParseBoolean(os.Getenv("ENABLE_CORS"), false),

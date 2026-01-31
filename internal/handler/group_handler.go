@@ -106,14 +106,14 @@ func (s *Server) ListGroups(c *gin.Context) {
 	groupResponses := make([]GroupResponse, 0, len(groups))
 	for i := range groups {
 		groupResp := s.newGroupResponse(&groups[i])
-		
+
 		// 获取分组的统计信息（24小时和7天）
 		stats, err := s.GroupService.GetGroupListStats(c.Request.Context(), groups[i].ID)
 		if err == nil && stats != nil {
 			groupResp.Stats24Hour = &stats.Stats24Hour
 			groupResp.Stats7Day = &stats.Stats7Day
 		}
-		
+
 		groupResponses = append(groupResponses, *groupResp)
 	}
 
@@ -226,7 +226,7 @@ func (s *Server) newGroupResponse(group *models.Group) *GroupResponse {
 	if appURL != "" {
 		u, err := url.Parse(appURL)
 		if err == nil {
-			u.Path = strings.TrimRight(u.Path, "/") + "/proxy/" + group.Name
+			u.Path = strings.TrimRight(u.Path, "/") + "/" + group.Name  //proxy/
 			endpoint = u.String()
 		}
 	}

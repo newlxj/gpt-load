@@ -30,7 +30,7 @@ const toggleMenu = () => {
           <div class="brand-icon">
             <img src="@/assets/logo.png" alt="" />
           </div>
-          <h1 v-if="!isMobile" class="brand-title">GPT Load</h1>
+          <h1 v-if="!isMobile" class="brand-title">GPT代理平台</h1>
         </div>
 
         <nav v-if="!isMobile" class="header-nav">

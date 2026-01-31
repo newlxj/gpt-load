@@ -33,6 +33,7 @@ type Server struct {
 	LogService                 *services.LogService
 	CommonHandler              *CommonHandler
 	EncryptionSvc              encryption.Service
+	LoginLimiter               *services.LoginLimiter
 }
 
 // NewServerParams defines the dependencies for the NewServer constructor.
@@ -52,6 +53,7 @@ type NewServerParams struct {
 	LogService                 *services.LogService
 	CommonHandler              *CommonHandler
 	EncryptionSvc              encryption.Service
+	LoginLimiter               *services.LoginLimiter
 }
 
 // NewServer creates a new handler instance with dependencies injected by dig.
@@ -71,6 +73,7 @@ func NewServer(params NewServerParams) *Server {
 		LogService:                 params.LogService,
 		CommonHandler:              params.CommonHandler,
 		EncryptionSvc:              params.EncryptionSvc,
+		LoginLimiter:               params.LoginLimiter,
 	}
 }
 
@@ -96,16 +99,47 @@ func (s *Server) Login(c *gin.Context) {
 		return
 	}
 
+	// Check if login is locked
+	if s.LoginLimiter != nil {
+		allowed, remaining := s.LoginLimiter.CheckLogin()
+		if !allowed {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"success": false,
+				"message": i18n.Message(c, "auth.account_locked"),
+				"locked": true,
+				"remaining_seconds": int(remaining.Seconds()),
+			})
+			return
+		}
+	}
+
 	authConfig := s.config.GetAuthConfig()
 
 	isValid := subtle.ConstantTimeCompare([]byte(req.AuthKey), []byte(authConfig.Key)) == 1
 
 	if isValid {
+		// Record successful login
+		if s.LoginLimiter != nil {
+			s.LoginLimiter.RecordSuccess()
+		}
 		c.JSON(http.StatusOK, LoginResponse{
 			Success: true,
 			Message: i18n.Message(c, "auth.authentication_successful"),
 		})
 	} else {
+		// Record failed login attempt
+		if s.LoginLimiter != nil {
+			locked, duration := s.LoginLimiter.RecordFailure()
+			if locked {
+				c.JSON(http.StatusTooManyRequests, gin.H{
+					"success": false,
+					"message": i18n.Message(c, "auth.account_locked"),
+					"locked": true,
+					"lockout_duration_seconds": duration,
+				})
+				return
+			}
+		}
 		c.JSON(http.StatusUnauthorized, LoginResponse{
 			Success: false,
 			Message: i18n.Message(c, "auth.authentication_failed"),

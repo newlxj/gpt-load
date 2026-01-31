@@ -3,10 +3,10 @@ import AppFooter from "@/components/AppFooter.vue";
 import LanguageSelector from "@/components/LanguageSelector.vue";
 import { useAuthService } from "@/services/auth";
 import { LockClosedSharp } from "@vicons/ionicons5";
-import { NButton, NCard, NInput, NSpace, NIcon, useMessage } from "naive-ui";
+import { NButton, NCard, NIcon, NInput, NSpace, useMessage } from "naive-ui";
 import { ref } from "vue";
-import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 
 const authKey = ref("");
 const loading = ref(false);
@@ -41,16 +41,16 @@ const handleLogin = async () => {
     </div>
 
     <div class="login-content">
-      <div class="login-header">
+      <!-- <div class="login-header">
         <h1 class="login-title">{{ t("login.title") }}</h1>
         <p class="login-subtitle">{{ t("login.subtitle") }}</p>
-      </div>
+      </div> -->
 
       <n-card class="login-card modern-card" :bordered="false">
         <template #header>
           <div class="card-header">
-            <h2 class="card-title">{{ t("login.welcome") }}</h2>
-            <p class="card-subtitle">{{ t("login.welcomeDesc") }}</p>
+            <!-- <h2 class="card-title">{{ t("login.welcome") }}</h2>
+            <p class="card-subtitle">{{ t("login.welcomeDesc") }}</p> -->
           </div>
         </template>
 
@@ -204,18 +204,84 @@ const handleLogin = async () => {
 }
 
 .login-btn {
-  background: var(--primary-gradient);
-  border: none;
+  /* 绿色玻璃效果 */
+  background: linear-gradient(
+    135deg,
+    rgba(34, 197, 94, 0.9) 0%,
+    rgba(22, 163, 74, 0.85) 50%,
+    rgba(21, 128, 61, 0.9) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 4px 16px rgba(34, 197, 94, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
   font-weight: 600;
   letter-spacing: 0.5px;
   height: 48px;
   font-size: 1rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 添加光泽效果 */
+.login-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.login-btn:hover::before {
+  left: 100%;
 }
 
 .login-btn:hover {
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  /* 悬停时的绿色渐变 */
+  background: linear-gradient(
+    135deg,
+    rgba(22, 163, 74, 0.95) 0%,
+    rgba(21, 128, 61, 0.9) 50%,
+    rgba(20, 83, 45, 0.95) 100%
+  );
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 12px 32px rgba(34, 197, 94, 0.45),
+    0 6px 16px rgba(34, 197, 94, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* 点击效果 */
+.login-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow:
+    0 4px 12px rgba(34, 197, 94, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* 加载状态 */
+.login-btn:deep(.n-button__icon) {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 禁用状态 */
+.login-btn:deep(.n-button--disabled) {
+  opacity: 0.6;
+  filter: grayscale(0.3);
 }
 
 :deep(.n-input) {
@@ -253,8 +319,36 @@ const handleLogin = async () => {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+:root.dark .login-btn {
+  background: linear-gradient(
+    135deg,
+    rgba(34, 197, 94, 0.85) 0%,
+    rgba(22, 163, 74, 0.8) 50%,
+    rgba(21, 128, 61, 0.85) 100%
+  );
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  box-shadow:
+    0 4px 16px rgba(34, 197, 94, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
 :root.dark .login-btn:hover {
-  background: linear-gradient(135deg, #7c8aac 0%, #8b94c0 100%);
-  box-shadow: 0 8px 25px rgba(139, 157, 245, 0.2);
+  background: linear-gradient(
+    135deg,
+    rgba(22, 163, 74, 0.9) 0%,
+    rgba(21, 128, 61, 0.85) 50%,
+    rgba(20, 83, 45, 0.9) 100%
+  );
+  box-shadow:
+    0 12px 32px rgba(34, 197, 94, 0.4),
+    0 6px 16px rgba(34, 197, 94, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-color: rgba(74, 222, 128, 0.4);
+}
+
+:root.dark .login-btn:active {
+  box-shadow:
+    0 4px 12px rgba(34, 197, 94, 0.2),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 </style>

@@ -59,7 +59,9 @@ type ServerConfig struct {
 
 // AuthConfig represents authentication configuration
 type AuthConfig struct {
-	Key string `json:"key"`
+	Key                 string `json:"key"`
+	MaxFailedAttempts   int    `json:"max_failed_attempts"`    // Maximum failed login attempts before lockout
+	LockoutDuration     int    `json:"lockout_duration"`        // Lockout duration in seconds
 }
 
 // CORSConfig represents CORS configuration
