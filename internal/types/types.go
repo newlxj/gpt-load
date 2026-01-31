@@ -48,6 +48,7 @@ type SystemSettings struct {
 // ServerConfig represents server configuration
 type ServerConfig struct {
 	Port                    int    `json:"port"`
+	ProxyPort               int    `json:"proxy_port"` // Public proxy-only port
 	Host                    string `json:"host"`
 	IsMaster                bool   `json:"is_master"`
 	ReadTimeout             int    `json:"read_timeout"`

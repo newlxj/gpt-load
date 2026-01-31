@@ -10,10 +10,12 @@ import (
 
 	"gpt-load/internal/config"
 	db "gpt-load/internal/db/migrations"
+	"gpt-load/internal/handler"
 	"gpt-load/internal/i18n"
 	"gpt-load/internal/keypool"
 	"gpt-load/internal/models"
 	"gpt-load/internal/proxy"
+	"gpt-load/internal/router"
 	"gpt-load/internal/services"
 	"gpt-load/internal/store"
 	"gpt-load/internal/types"
@@ -28,6 +30,7 @@ import (
 // App holds all services and manages the application lifecycle.
 type App struct {
 	engine            *gin.Engine
+	proxyEngine       *gin.Engine // Separate router for proxy-only port
 	configManager     types.ConfigManager
 	settingsManager   *config.SystemSettingsManager
 	groupManager      *services.GroupManager
@@ -36,9 +39,11 @@ type App struct {
 	cronChecker       *keypool.CronChecker
 	keyPoolProvider   *keypool.KeyProvider
 	proxyServer       *proxy.ProxyServer
+	serverHandler     *handler.Server
 	storage           store.Store
 	db                *gorm.DB
 	httpServer        *http.Server
+	proxyHTTPServer   *http.Server // Proxy-only server
 }
 
 // AppParams defines the dependencies for the App.
@@ -53,6 +58,7 @@ type AppParams struct {
 	CronChecker       *keypool.CronChecker
 	KeyPoolProvider   *keypool.KeyProvider
 	ProxyServer       *proxy.ProxyServer
+	ServerHandler     *handler.Server
 	Storage           store.Store
 	DB                *gorm.DB
 }
@@ -69,6 +75,7 @@ func NewApp(params AppParams) *App {
 		cronChecker:       params.CronChecker,
 		keyPoolProvider:   params.KeyPoolProvider,
 		proxyServer:       params.ProxyServer,
+		serverHandler:     params.ServerHandler,
 		storage:           params.Storage,
 		db:                params.DB,
 	}
@@ -136,7 +143,7 @@ func (a *App) Start() error {
 
 	a.groupManager.Initialize()
 
-	// Create HTTP server
+	// Create main HTTP server (full access)
 	serverConfig := a.configManager.GetEffectiveServerConfig()
 	a.httpServer = &http.Server{
 		Addr:           fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.Port),
@@ -147,15 +154,45 @@ func (a *App) Start() error {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	// Start HTTP server in a new goroutine
+	// Start main HTTP server in a new goroutine
 	go func() {
 		logrus.Infof("GPT-Load proxy server started successfully on Version: %s", version.Version)
-		logrus.Infof("Server address: http://%s:%d", serverConfig.Host, serverConfig.Port)
+		logrus.Infof("Internal server (full access): http://%s:%d", serverConfig.Host, serverConfig.Port)
+		if serverConfig.ProxyPort > 0 {
+			logrus.Infof("External proxy-only port: http://%s:%d", serverConfig.Host, serverConfig.ProxyPort)
+		}
 		logrus.Info("")
 		if err := a.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logrus.Fatalf("Server startup failed: %v", err)
 		}
 	}()
+
+	// Create proxy-only HTTP server if PROXY_PORT is configured
+	if serverConfig.ProxyPort > 0 {
+		// Create proxy-only router
+		a.proxyEngine = router.NewProxyRouter(
+			a.proxyServer,
+			a.groupManager,
+			a.serverHandler,
+			a.configManager,
+		)
+
+		a.proxyHTTPServer = &http.Server{
+			Addr:           fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.ProxyPort),
+			Handler:        a.proxyEngine,
+			ReadTimeout:    time.Duration(serverConfig.ReadTimeout) * time.Second,
+			WriteTimeout:   time.Duration(serverConfig.WriteTimeout) * time.Second,
+			IdleTimeout:    time.Duration(serverConfig.IdleTimeout) * time.Second,
+			MaxHeaderBytes: 1 << 20,
+		}
+
+		// Start proxy-only HTTP server in a new goroutine
+		go func() {
+			if err := a.proxyHTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				logrus.Fatalf("Proxy-only server startup failed: %v", err)
+			}
+		}()
+	}
 
 	return nil
 }
@@ -172,14 +209,41 @@ func (a *App) Stop(ctx context.Context) {
 	httpShutdownCtx, cancelHttpShutdown := context.WithTimeout(context.Background(), httpShutdownTimeout)
 	defer cancelHttpShutdown()
 
-	logrus.Debugf("Attempting to gracefully shut down HTTP server (max %v)...", httpShutdownTimeout)
-	if err := a.httpServer.Shutdown(httpShutdownCtx); err != nil {
-		logrus.Debugf("HTTP server graceful shutdown timed out as expected, forcing remaining connections to close.")
-		if closeErr := a.httpServer.Close(); closeErr != nil {
-			logrus.Errorf("Error forcing HTTP server to close: %v", closeErr)
+	// Shutdown both HTTP servers
+	var wg sync.WaitGroup
+
+	// Shutdown main HTTP server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		logrus.Debugf("Attempting to gracefully shut down main HTTP server (max %v)...", httpShutdownTimeout)
+		if err := a.httpServer.Shutdown(httpShutdownCtx); err != nil {
+			logrus.Debugf("Main HTTP server graceful shutdown timed out as expected, forcing remaining connections to close.")
+			if closeErr := a.httpServer.Close(); closeErr != nil {
+				logrus.Errorf("Error forcing main HTTP server to close: %v", closeErr)
+			}
 		}
+		logrus.Info("Main HTTP server has been shut down.")
+	}()
+
+	// Shutdown proxy-only HTTP server if it exists
+	if a.proxyHTTPServer != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			logrus.Debugf("Attempting to gracefully shut down proxy-only HTTP server (max %v)...", httpShutdownTimeout)
+			if err := a.proxyHTTPServer.Shutdown(httpShutdownCtx); err != nil {
+				logrus.Debugf("Proxy-only HTTP server graceful shutdown timed out as expected, forcing remaining connections to close.")
+				if closeErr := a.proxyHTTPServer.Close(); closeErr != nil {
+					logrus.Errorf("Error forcing proxy-only HTTP server to close: %v", closeErr)
+				}
+			}
+			logrus.Info("Proxy-only HTTP server has been shut down.")
+		}()
 	}
-	logrus.Info("HTTP server has been shut down.")
+
+	// Wait for both HTTP servers to shutdown
+	wg.Wait()
 
 	// 使用原始的总超时 context 继续关闭其他后台服务
 	stoppableServices := []func(context.Context){
@@ -195,7 +259,6 @@ func (a *App) Stop(ctx context.Context) {
 		)
 	}
 
-	var wg sync.WaitGroup
 	wg.Add(len(stoppableServices))
 
 	for _, stopFunc := range stoppableServices {

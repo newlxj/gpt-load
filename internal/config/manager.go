@@ -73,6 +73,7 @@ func (m *Manager) ReloadConfig() error {
 		Server: types.ServerConfig{
 			IsMaster:                !utils.ParseBoolean(os.Getenv("IS_SLAVE"), false),
 			Port:                    utils.ParseInteger(os.Getenv("PORT"), 3001),
+			ProxyPort:               utils.ParseInteger(os.Getenv("PROXY_PORT"), 0), // 0 means disabled
 			Host:                    utils.GetEnvOrDefault("HOST", "0.0.0.0"),
 			ReadTimeout:             utils.ParseInteger(os.Getenv("SERVER_READ_TIMEOUT"), 60),
 			WriteTimeout:            utils.ParseInteger(os.Getenv("SERVER_WRITE_TIMEOUT"), 600),
@@ -217,7 +218,10 @@ func (m *Manager) DisplayServerConfig() {
 	logrus.Info("")
 	logrus.Info("======= Server Configuration =======")
 	logrus.Info("  --- Server ---")
-	logrus.Infof("    Listen Address: %s:%d", serverConfig.Host, serverConfig.Port)
+	logrus.Infof("    Internal Port (Full Access): %s:%d", serverConfig.Host, serverConfig.Port)
+	if serverConfig.ProxyPort > 0 {
+		logrus.Infof("    External Port (Proxy Only): %s:%d", serverConfig.Host, serverConfig.ProxyPort)
+	}
 	logrus.Infof("    Graceful Shutdown Timeout: %d seconds", serverConfig.GracefulShutdownTimeout)
 	logrus.Infof("    Read Timeout: %d seconds", serverConfig.ReadTimeout)
 	logrus.Infof("    Write Timeout: %d seconds", serverConfig.WriteTimeout)

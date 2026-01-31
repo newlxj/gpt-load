@@ -72,6 +72,31 @@ func NewRouter(
 	return router
 }
 
+// NewProxyRouter creates a router with only proxy routes (for public proxy port)
+// The proxy routes are at root level (/:group_name/*path) instead of (/proxy/:group_name/*path)
+func NewProxyRouter(
+	proxyServer *proxy.ProxyServer,
+	groupManager *services.GroupManager,
+	serverHandler *handler.Server,
+	configManager types.ConfigManager,
+) *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+
+	router := gin.New()
+
+	// Register minimal middleware for proxy
+	router.Use(middleware.Recovery())
+	router.Use(middleware.ErrorHandler())
+	router.Use(middleware.Logger(configManager.GetLogConfig()))
+	router.Use(middleware.RateLimiter(configManager.GetPerformanceConfig()))
+	router.Use(middleware.SecurityHeaders())
+
+	// Register proxy routes at root level
+	registerProxyRoutesPublic(router, proxyServer, groupManager, serverHandler)
+
+	return router
+}
+
 // registerSystemRoutes 注册系统级路由
 func registerSystemRoutes(router *gin.Engine, serverHandler *handler.Server) {
 	router.GET("/health", serverHandler.Health)
@@ -178,6 +203,21 @@ func registerProxyRoutes(
 	serverHandler *handler.Server,
 ) {
 	proxyGroup := router.Group("/proxy/:group_name")
+
+	proxyGroup.Use(middleware.ProxyRouteDispatcher(serverHandler))
+	proxyGroup.Use(middleware.ProxyAuth(groupManager))
+
+	proxyGroup.Any("/*path", proxyServer.HandleProxy)
+}
+
+// registerProxyRoutesPublic 注册代理路由（公开代理端口，不带 /proxy 前缀）
+func registerProxyRoutesPublic(
+	router *gin.Engine,
+	proxyServer *proxy.ProxyServer,
+	groupManager *services.GroupManager,
+	serverHandler *handler.Server,
+) {
+	proxyGroup := router.Group("/:group_name")
 
 	proxyGroup.Use(middleware.ProxyRouteDispatcher(serverHandler))
 	proxyGroup.Use(middleware.ProxyAuth(groupManager))

@@ -83,9 +83,15 @@ func (b *BaseChannel) BuildUpstreamURL(originalURL *url.URL, groupName string) (
 	}
 
 	finalURL := *base
-	proxyPrefix := "/proxy/" + groupName
 	requestPath := originalURL.Path
+
+	// Remove both /proxy/group_name and /group_name prefixes (no trailing slash)
+	// This supports both internal port (with /proxy prefix) and external proxy port (without /proxy prefix)
+	proxyPrefix := "/proxy/" + groupName
+	directPrefix := "/" + groupName
+
 	requestPath = strings.TrimPrefix(requestPath, proxyPrefix)
+	requestPath = strings.TrimPrefix(requestPath, directPrefix)
 
 	finalURL.Path = strings.TrimRight(finalURL.Path, "/") + requestPath
 
