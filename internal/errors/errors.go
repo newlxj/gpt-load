@@ -39,8 +39,8 @@ var (
 	ErrNoActiveKeys       = &APIError{HTTPStatus: http.StatusServiceUnavailable, Code: "NO_ACTIVE_KEYS", Message: "No active API keys available for this group"}
 	ErrMaxRetriesExceeded = &APIError{HTTPStatus: http.StatusBadGateway, Code: "MAX_RETRIES_EXCEEDED", Message: "Request failed after maximum retries"}
 	ErrNoKeysAvailable    = &APIError{HTTPStatus: http.StatusServiceUnavailable, Code: "NO_KEYS_AVAILABLE", Message: "No API keys available to process the request"}
-	ErrGroupExpired       = &APIError{HTTPStatus: http.StatusServiceUnavailable, Code: "GROUP_EXPIRED", Message: "当前负载较高，请稍后尝试。"}
-	ErrRateLimitExceeded  = &APIError{HTTPStatus: http.StatusServiceUnavailable, Code: "RATE_LIMIT_EXCEEDED", Message: "当前负载较高，请稍后尝试。"}
+	ErrGroupExpired       = &APIError{HTTPStatus: http.StatusServiceUnavailable, Code: "GROUP_EXPIRED", Message: "当前负载较高，请稍后尝试.EXP。"}
+	ErrRateLimitExceeded  = &APIError{HTTPStatus: http.StatusServiceUnavailable, Code: "RATE_LIMIT_EXCEEDED", Message: "当前负载较高，请稍后尝试.RATE_LIMIT。"}
 )
 
 // NewAPIError creates a new APIError with a custom message.
