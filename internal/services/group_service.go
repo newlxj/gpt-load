@@ -902,7 +902,22 @@ func (s *GroupService) validateAndCleanConfig(configMap map[string]any) (map[str
 		return nil, NewI18nError(app_errors.ErrValidation, "error.invalid_config_format", map[string]any{"error": err.Error()})
 	}
 
-	if err := s.settingsManager.ValidateGroupConfigOverrides(configMap); err != nil {
+	// 限流配置字段（不参与 settingsManager 的验证）
+	rateLimitFields := map[string]bool{
+		"expires_at":             true,
+		"max_requests_per_hour":  true,
+		"max_requests_per_month": true,
+	}
+
+	// 过滤掉限流配置字段后再进行 settingsManager 验证
+	configForSettingsValidation := make(map[string]any)
+	for k, v := range configMap {
+		if !rateLimitFields[k] {
+			configForSettingsValidation[k] = v
+		}
+	}
+
+	if err := s.settingsManager.ValidateGroupConfigOverrides(configForSettingsValidation); err != nil {
 		return nil, NewI18nError(app_errors.ErrValidation, "error.invalid_config_format", map[string]any{"error": err.Error()})
 	}
 
@@ -939,11 +954,12 @@ func (s *GroupService) validateRateLimitConfig(configMap map[string]any) error {
 	if expiresAtVal, exists := configMap["expires_at"]; exists && expiresAtVal != nil {
 		switch v := expiresAtVal.(type) {
 		case string:
-			// 尝试解析日期时间
-			_, err := time.Parse(time.RFC3339, v)
+			// 前端发送的格式: 2006-01-02 15:04:05
+			parsedTime, err := time.ParseInLocation("2006-01-02 15:04:05", v, time.Local)
 			if err != nil {
-				return fmt.Errorf("invalid expires_at format: %w", err)
+				return fmt.Errorf("invalid expires_at format '%s': %w", v, err)
 			}
+			_ = parsedTime // 验证通过
 		default:
 			return fmt.Errorf("expires_at must be a string in ISO8601 format")
 		}
@@ -1181,10 +1197,13 @@ func (s *GroupService) CheckRateLimit(ctx context.Context, groupID uint) *app_er
 	now := time.Now()
 
 	// 1. 检查是否过期
-	if config.ExpiresAt != nil && now.After(*config.ExpiresAt) {
-		return &app_errors.RateLimitError{
-			Reason:  "expired",
-			ResetAt: *config.ExpiresAt,
+	if config.ExpiresAt != nil && *config.ExpiresAt != "" {
+		expiresAt, err := time.ParseInLocation("2006-01-02 15:04:05", *config.ExpiresAt, time.Local)
+		if err == nil && now.After(expiresAt) {
+			return &app_errors.RateLimitError{
+				Reason:  "expired",
+				ResetAt: expiresAt,
+			}
 		}
 	}
 

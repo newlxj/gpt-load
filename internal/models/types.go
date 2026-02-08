@@ -39,7 +39,7 @@ type GroupConfig struct {
 	KeyValidationTimeoutSeconds  *int       `json:"key_validation_timeout_seconds,omitempty"`
 	EnableRequestBodyLogging     *bool      `json:"enable_request_body_logging,omitempty"`
 	// 限流和有效期字段
-	ExpiresAt            *time.Time `json:"expires_at,omitempty"`             // 过期时间
+	ExpiresAt            *string    `json:"expires_at,omitempty"`             // 过期时间（格式: 2006-01-02 15:04:05）
 	MaxRequestsPerHour   *int       `json:"max_requests_per_hour,omitempty"`  // 每小时最大请求次数，0表示不限制
 	MaxRequestsPerMonth  *int       `json:"max_requests_per_month,omitempty"` // 每月最大请求次数，0表示不限制
 }
