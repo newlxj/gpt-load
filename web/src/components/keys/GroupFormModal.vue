@@ -79,6 +79,10 @@ interface GroupFormData {
   header_rules: HeaderRuleItem[];
   proxy_keys: string;
   group_type?: string;
+  // 限流和有效期字段
+  expires_at: string;
+  max_requests_per_hour: number | null;
+  max_requests_per_month: number | null;
 }
 
 // 表单数据
@@ -104,6 +108,10 @@ const formData = reactive<GroupFormData>({
   header_rules: [] as HeaderRuleItem[],
   proxy_keys: "",
   group_type: "standard",
+  // 限流和有效期默认值
+  expires_at: getDefaultExpiresAt(),
+  max_requests_per_hour: 0,
+  max_requests_per_month: 0,
 });
 
 const channelTypeOptions = ref<{ label: string; value: string }[]>([]);
@@ -111,10 +119,39 @@ const configOptions = ref<GroupConfigOption[]>([]);
 const channelTypesFetched = ref(false);
 const configOptionsFetched = ref(false);
 
+// 获取默认过期时间（当前时间后一个月）
+function getDefaultExpiresAt(): string {
+  const date = new Date();
+  date.setMonth(date.getMonth() + 1);
+  return date.toISOString().slice(0, 16); // 返回本地日期时间格式 YYYY-MM-DDTHH:mm
+}
+
 // 跟踪用户是否已手动修改过字段（仅在新增模式下使用）
 const userModifiedFields = ref({
   test_model: false,
   upstream: false,
+});
+
+// 有效期时间戳计算属性（用于日期选择器）
+const expiresAtTimestamp = computed<number | undefined>({
+  get: () => {
+    if (!formData.expires_at) return undefined;
+    return new Date(formData.expires_at).getTime();
+  },
+  set: (value: number | undefined) => {
+    if (value === undefined || value === null) {
+      formData.expires_at = "";
+    } else {
+      const date = new Date(value);
+      // 转换为本地日期时间格式 YYYY-MM-DDTHH:mm
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      formData.expires_at = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+  },
 });
 
 // 根据渠道类型动态生成占位符提示
@@ -322,6 +359,11 @@ function loadGroupData() {
       value,
     };
   });
+  // 从 config 中提取限流字段（如果存在）
+  const expires_at = (props.group.config?.expires_at as string) || getDefaultExpiresAt();
+  const max_requests_per_hour = (props.group.config?.max_requests_per_hour as number) ?? 0;
+  const max_requests_per_month = (props.group.config?.max_requests_per_month as number) ?? 0;
+
   Object.assign(formData, {
     name: props.group.name || "",
     display_name: props.group.display_name || "",
@@ -345,6 +387,10 @@ function loadGroupData() {
     })),
     proxy_keys: props.group.proxy_keys || "",
     group_type: props.group.group_type || "standard",
+    // 限流和有效期字段
+    expires_at,
+    max_requests_per_hour,
+    max_requests_per_month,
   });
 }
 
@@ -510,6 +556,17 @@ async function handleSubmit() {
         }
       }
     });
+
+    // 添加限流配置到 config
+    if (formData.expires_at) {
+      config.expires_at = formData.expires_at;
+    }
+    if (formData.max_requests_per_hour !== null && formData.max_requests_per_hour > 0) {
+      config.max_requests_per_hour = formData.max_requests_per_hour;
+    }
+    if (formData.max_requests_per_month !== null && formData.max_requests_per_month > 0) {
+      config.max_requests_per_month = formData.max_requests_per_month;
+    }
 
     // 构建提交数据
     const submitData = {
@@ -1155,6 +1212,72 @@ async function handleSubmit() {
                     type="textarea"
                     placeholder='{"temperature": 0.7}'
                     :rows="4"
+                  />
+                </n-form-item>
+              </div>
+
+              <!-- 限流配置 -->
+              <div class="config-section" v-if="formData.group_type !== 'aggregate'">
+                <h5 class="config-title-with-tooltip">
+                  {{ t("keys.rateLimitConfig") }}
+                  <n-tooltip trigger="hover" placement="top">
+                    <template #trigger>
+                      <n-icon :component="HelpCircleOutline" class="help-icon config-help" />
+                    </template>
+                    {{ t("keys.rateLimitConfigTooltip") }}
+                  </n-tooltip>
+                </h5>
+
+                <!-- 有效期 -->
+                <n-form-item :label="t('keys.expiresAt')" path="expires_at">
+                  <n-date-picker
+                    v-model:value="expiresAtTimestamp"
+                    type="datetime"
+                    :placeholder="t('keys.selectExpireTime')"
+                    style="width: 100%"
+                    clearable
+                  />
+                </n-form-item>
+
+                <!-- 每小时限制 -->
+                <n-form-item :label="t('keys.maxRequestsPerHour')" path="max_requests_per_hour">
+                  <template #label>
+                    <div class="form-label-with-tooltip">
+                      {{ t("keys.maxRequestsPerHour") }}
+                      <n-tooltip trigger="hover" placement="top">
+                        <template #trigger>
+                          <n-icon :component="HelpCircleOutline" class="help-icon" />
+                        </template>
+                        {{ t("keys.maxRequestsPerHourTooltip") }}
+                      </n-tooltip>
+                    </div>
+                  </template>
+                  <n-input-number
+                    v-model:value="formData.max_requests_per_hour"
+                    :min="0"
+                    :placeholder="t('keys.noLimit')"
+                    style="width: 100%"
+                  />
+                </n-form-item>
+
+                <!-- 每月限制 -->
+                <n-form-item :label="t('keys.maxRequestsPerMonth')" path="max_requests_per_month">
+                  <template #label>
+                    <div class="form-label-with-tooltip">
+                      {{ t("keys.maxRequestsPerMonth") }}
+                      <n-tooltip trigger="hover" placement="top">
+                        <template #trigger>
+                          <n-icon :component="HelpCircleOutline" class="help-icon" />
+                        </template>
+                        {{ t("keys.maxRequestsPerMonthTooltip") }}
+                      </n-tooltip>
+                    </div>
+                  </template>
+                  <n-input-number
+                    v-model:value="formData.max_requests_per_month"
+                    :min="0"
+                    :placeholder="t('keys.noLimit')"
+                    style="width: 100%"
                   />
                 </n-form-item>
               </div>

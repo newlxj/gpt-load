@@ -30,6 +30,7 @@ type ProxyServer struct {
 	keyProvider       *keypool.KeyProvider
 	groupManager      *services.GroupManager
 	subGroupManager   *services.SubGroupManager
+	groupService      *services.GroupService
 	settingsManager   *config.SystemSettingsManager
 	channelFactory    *channel.Factory
 	requestLogService *services.RequestLogService
@@ -41,6 +42,7 @@ func NewProxyServer(
 	keyProvider *keypool.KeyProvider,
 	groupManager *services.GroupManager,
 	subGroupManager *services.SubGroupManager,
+	groupService *services.GroupService,
 	settingsManager *config.SystemSettingsManager,
 	channelFactory *channel.Factory,
 	requestLogService *services.RequestLogService,
@@ -50,6 +52,7 @@ func NewProxyServer(
 		keyProvider:       keyProvider,
 		groupManager:      groupManager,
 		subGroupManager:   subGroupManager,
+		groupService:      groupService,
 		settingsManager:   settingsManager,
 		channelFactory:    channelFactory,
 		requestLogService: requestLogService,
@@ -86,6 +89,12 @@ func (ps *ProxyServer) HandleProxy(c *gin.Context) {
 			response.Error(c, app_errors.ParseDBError(err))
 			return
 		}
+	}
+
+	// 检查限流和过期
+	if rateLimitErr := ps.groupService.CheckRateLimit(c.Request.Context(), group.ID); rateLimitErr != nil {
+		response.Error(c, rateLimitErr.ToAPIError())
+		return
 	}
 
 	channelHandler, err := ps.channelFactory.GetChannel(group)
@@ -246,6 +255,9 @@ func (ps *ProxyServer) executeRequestWithRetry(
 
 		// 如果是最后一次尝试，直接返回错误，不再递归
 		if isLastAttempt {
+			// 更新统计数据（失败）
+			ps.updateGroupStats(group.ID, false)
+
 			var errorJSON map[string]any
 			if err := json.Unmarshal([]byte(errorMessage), &errorJSON); err == nil {
 				c.JSON(statusCode, errorJSON)
@@ -281,6 +293,9 @@ func (ps *ProxyServer) executeRequestWithRetry(
 	}
 
 	ps.logRequest(c, originalGroup, group, apiKey, startTime, resp.StatusCode, nil, isStream, upstreamURL, channelHandler, bodyBytes, models.RequestTypeFinal)
+
+	// 异步更新统计数据
+	ps.updateGroupStats(group.ID, resp.StatusCode < 400)
 }
 
 // logRequest is a helper function to create and record a request log.
@@ -356,4 +371,14 @@ func (ps *ProxyServer) logRequest(
 	if err := ps.requestLogService.Record(logEntry); err != nil {
 		logrus.Errorf("Failed to record request log: %v", err)
 	}
+}
+
+// updateGroupStats 异步更新分组统计数据
+func (ps *ProxyServer) updateGroupStats(groupID uint, isSuccess bool) {
+	go func() {
+		ctx := context.Background()
+		if err := ps.groupService.IncrementGroupMonthlyStat(ctx, groupID, isSuccess); err != nil {
+			logrus.WithError(err).WithField("group_id", groupID).Error("Failed to increment monthly stat")
+		}
+	}()
 }

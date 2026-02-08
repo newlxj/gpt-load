@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "mcp__zread__get_repo_structure",
-      "Bash(go build:*)"
+      "Bash(go build:*)",
+      "Bash(dir /b \"f:\\\\sync_my_project\\\\golang\\\\gpt-load\\\\web\\\\src\\\\locales\")"
     ]
   }
 }

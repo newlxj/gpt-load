@@ -88,6 +88,10 @@ export interface Group {
   // 统计信息（列表显示用）
   stats_24_hour?: RequestStats;
   stats_7_day?: RequestStats;
+  // 限流和有效期字段（存储在 config 中）
+  expires_at?: string;              // ISO8601 格式
+  max_requests_per_hour?: number;   // 0 表示不限制
+  max_requests_per_month?: number;  // 0 表示不限制
 }
 
 export interface GroupConfigOption {

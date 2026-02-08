@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -38,6 +39,8 @@ var (
 	ErrNoActiveKeys       = &APIError{HTTPStatus: http.StatusServiceUnavailable, Code: "NO_ACTIVE_KEYS", Message: "No active API keys available for this group"}
 	ErrMaxRetriesExceeded = &APIError{HTTPStatus: http.StatusBadGateway, Code: "MAX_RETRIES_EXCEEDED", Message: "Request failed after maximum retries"}
 	ErrNoKeysAvailable    = &APIError{HTTPStatus: http.StatusServiceUnavailable, Code: "NO_KEYS_AVAILABLE", Message: "No API keys available to process the request"}
+	ErrGroupExpired       = &APIError{HTTPStatus: http.StatusServiceUnavailable, Code: "GROUP_EXPIRED", Message: "当前负载较高，请稍后尝试。"}
+	ErrRateLimitExceeded  = &APIError{HTTPStatus: http.StatusServiceUnavailable, Code: "RATE_LIMIT_EXCEEDED", Message: "当前负载较高，请稍后尝试。"}
 )
 
 // NewAPIError creates a new APIError with a custom message.
@@ -88,4 +91,25 @@ func ParseDBError(err error) *APIError {
 	}
 
 	return ErrDatabase
+}
+
+// RateLimitError represents a rate limit or expiry error with details
+type RateLimitError struct {
+	Reason  string    // "expired", "hourly_limit", "monthly_limit"
+	Limit   int64     // 限制值
+	Used    int64     // 已使用量
+	ResetAt time.Time // 重置时间
+}
+
+// Error implements the error interface
+func (e *RateLimitError) Error() string {
+	return e.Reason
+}
+
+// ToAPIError converts RateLimitError to APIError
+func (e *RateLimitError) ToAPIError() *APIError {
+	if e.Reason == "expired" {
+		return ErrGroupExpired
+	}
+	return ErrRateLimitExceeded
 }

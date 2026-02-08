@@ -25,19 +25,23 @@ type SystemSetting struct {
 
 // GroupConfig 存储特定于分组的配置
 type GroupConfig struct {
-	RequestTimeout               *int    `json:"request_timeout,omitempty"`
-	IdleConnTimeout              *int    `json:"idle_conn_timeout,omitempty"`
-	ConnectTimeout               *int    `json:"connect_timeout,omitempty"`
-	MaxIdleConns                 *int    `json:"max_idle_conns,omitempty"`
-	MaxIdleConnsPerHost          *int    `json:"max_idle_conns_per_host,omitempty"`
-	ResponseHeaderTimeout        *int    `json:"response_header_timeout,omitempty"`
-	ProxyURL                     *string `json:"proxy_url,omitempty"`
-	MaxRetries                   *int    `json:"max_retries,omitempty"`
-	BlacklistThreshold           *int    `json:"blacklist_threshold,omitempty"`
-	KeyValidationIntervalMinutes *int    `json:"key_validation_interval_minutes,omitempty"`
-	KeyValidationConcurrency     *int    `json:"key_validation_concurrency,omitempty"`
-	KeyValidationTimeoutSeconds  *int    `json:"key_validation_timeout_seconds,omitempty"`
-	EnableRequestBodyLogging     *bool   `json:"enable_request_body_logging,omitempty"`
+	RequestTimeout               *int       `json:"request_timeout,omitempty"`
+	IdleConnTimeout              *int       `json:"idle_conn_timeout,omitempty"`
+	ConnectTimeout               *int       `json:"connect_timeout,omitempty"`
+	MaxIdleConns                 *int       `json:"max_idle_conns,omitempty"`
+	MaxIdleConnsPerHost          *int       `json:"max_idle_conns_per_host,omitempty"`
+	ResponseHeaderTimeout        *int       `json:"response_header_timeout,omitempty"`
+	ProxyURL                     *string    `json:"proxy_url,omitempty"`
+	MaxRetries                   *int       `json:"max_retries,omitempty"`
+	BlacklistThreshold           *int       `json:"blacklist_threshold,omitempty"`
+	KeyValidationIntervalMinutes *int       `json:"key_validation_interval_minutes,omitempty"`
+	KeyValidationConcurrency     *int       `json:"key_validation_concurrency,omitempty"`
+	KeyValidationTimeoutSeconds  *int       `json:"key_validation_timeout_seconds,omitempty"`
+	EnableRequestBodyLogging     *bool      `json:"enable_request_body_logging,omitempty"`
+	// 限流和有效期字段
+	ExpiresAt            *time.Time `json:"expires_at,omitempty"`             // 过期时间
+	MaxRequestsPerHour   *int       `json:"max_requests_per_hour,omitempty"`  // 每小时最大请求次数，0表示不限制
+	MaxRequestsPerMonth  *int       `json:"max_requests_per_month,omitempty"` // 每月最大请求次数，0表示不限制
 }
 
 // HeaderRule defines a single rule for header manipulation.
@@ -199,6 +203,18 @@ type GroupHourlyStat struct {
 	GroupID      uint      `gorm:"not null;uniqueIndex:idx_group_time" json:"group_id"`
 	SuccessCount int64     `gorm:"not null;default:0" json:"success_count"`
 	FailureCount int64     `gorm:"not null;default:0" json:"failure_count"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// GroupMonthlyStat 对应 group_monthly_stats 表，用于存储每个分组每月的请求统计
+type GroupMonthlyStat struct {
+	ID           uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Month        time.Time `gorm:"type:date;not null;uniqueIndex:idx_group_month" json:"month"` // 月份（月初，如2025-02-01）
+	GroupID      uint      `gorm:"not null;uniqueIndex:idx_group_month" json:"group_id"`
+	RequestCount int64     `gorm:"not null;default:0" json:"request_count"` // 总请求次数
+	SuccessCount int64     `gorm:"not null;default:0" json:"success_count"` // 成功次数
+	FailureCount int64     `gorm:"not null;default:0" json:"failure_count"` // 失败次数
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }

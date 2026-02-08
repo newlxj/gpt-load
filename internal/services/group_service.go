@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -896,6 +897,11 @@ func (s *GroupService) validateAndCleanConfig(configMap map[string]any) (map[str
 		}
 	}
 
+	// 验证限流配置
+	if err := s.validateRateLimitConfig(configMap); err != nil {
+		return nil, NewI18nError(app_errors.ErrValidation, "error.invalid_config_format", map[string]any{"error": err.Error()})
+	}
+
 	if err := s.settingsManager.ValidateGroupConfigOverrides(configMap); err != nil {
 		return nil, NewI18nError(app_errors.ErrValidation, "error.invalid_config_format", map[string]any{"error": err.Error()})
 	}
@@ -921,6 +927,61 @@ func (s *GroupService) validateAndCleanConfig(configMap map[string]any) (map[str
 	}
 
 	return finalMap, nil
+}
+
+// validateRateLimitConfig 验证限流和有效期配置
+func (s *GroupService) validateRateLimitConfig(configMap map[string]any) error {
+	if configMap == nil {
+		return nil
+	}
+
+	// 验证 expires_at 字段
+	if expiresAtVal, exists := configMap["expires_at"]; exists && expiresAtVal != nil {
+		switch v := expiresAtVal.(type) {
+		case string:
+			// 尝试解析日期时间
+			_, err := time.Parse(time.RFC3339, v)
+			if err != nil {
+				return fmt.Errorf("invalid expires_at format: %w", err)
+			}
+		default:
+			return fmt.Errorf("expires_at must be a string in ISO8601 format")
+		}
+	}
+
+	// 验证 max_requests_per_hour 字段
+	if hourlyVal, exists := configMap["max_requests_per_hour"]; exists && hourlyVal != nil {
+		switch v := hourlyVal.(type) {
+		case float64:
+			if v < 0 {
+				return fmt.Errorf("max_requests_per_hour must be >= 0")
+			}
+		case int:
+			if v < 0 {
+				return fmt.Errorf("max_requests_per_hour must be >= 0")
+			}
+		default:
+			return fmt.Errorf("max_requests_per_hour must be a number")
+		}
+	}
+
+	// 验证 max_requests_per_month 字段
+	if monthlyVal, exists := configMap["max_requests_per_month"]; exists && monthlyVal != nil {
+		switch v := monthlyVal.(type) {
+		case float64:
+			if v < 0 {
+				return fmt.Errorf("max_requests_per_month must be >= 0")
+			}
+		case int:
+			if v < 0 {
+				return fmt.Errorf("max_requests_per_month must be >= 0")
+			}
+		default:
+			return fmt.Errorf("max_requests_per_month must be a number")
+		}
+	}
+
+	return nil
 }
 
 // normalizeHeaderRules deduplicates and normalises header rules.
@@ -1101,4 +1162,117 @@ func validateModelRedirectRules(rules map[string]string) error {
 	}
 
 	return nil
+}
+
+// CheckRateLimit 检查分组是否超过限流或过期
+func (s *GroupService) CheckRateLimit(ctx context.Context, groupID uint) *app_errors.RateLimitError {
+	var group models.Group
+	if err := s.db.WithContext(ctx).Select("config").First(&group, groupID).Error; err != nil {
+		return nil // 如果获取分组失败，不做限流检查
+	}
+
+	// 解析配置
+	var config models.GroupConfig
+	if group.Config != nil {
+		configBytes, _ := json.Marshal(group.Config)
+		_ = json.Unmarshal(configBytes, &config)
+	}
+
+	now := time.Now()
+
+	// 1. 检查是否过期
+	if config.ExpiresAt != nil && now.After(*config.ExpiresAt) {
+		return &app_errors.RateLimitError{
+			Reason:  "expired",
+			ResetAt: *config.ExpiresAt,
+		}
+	}
+
+	// 2. 检查每小时限制
+	if config.MaxRequestsPerHour != nil && *config.MaxRequestsPerHour > 0 {
+		currentHour := now.Truncate(time.Hour)
+		var hourlyStat models.GroupHourlyStat
+		if err := s.db.WithContext(ctx).
+			Where("group_id = ? AND time = ?", groupID, currentHour).
+			First(&hourlyStat).Error; err == nil {
+			totalRequests := hourlyStat.SuccessCount + hourlyStat.FailureCount
+			if totalRequests >= int64(*config.MaxRequestsPerHour) {
+				return &app_errors.RateLimitError{
+					Reason:  "hourly_limit",
+					Limit:   int64(*config.MaxRequestsPerHour),
+					Used:    totalRequests,
+					ResetAt: currentHour.Add(time.Hour),
+				}
+			}
+		}
+	}
+
+	// 3. 检查每月限制
+	if config.MaxRequestsPerMonth != nil && *config.MaxRequestsPerMonth > 0 {
+		currentMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+		var monthlyStat models.GroupMonthlyStat
+		if err := s.db.WithContext(ctx).
+			Where("group_id = ? AND month = ?", groupID, currentMonth).
+			First(&monthlyStat).Error; err == nil {
+			if monthlyStat.RequestCount >= int64(*config.MaxRequestsPerMonth) {
+				// 计算下个月初作为重置时间
+				nextMonth := currentMonth.AddDate(0, 1, 0)
+				return &app_errors.RateLimitError{
+					Reason:  "monthly_limit",
+					Limit:   int64(*config.MaxRequestsPerMonth),
+					Used:    monthlyStat.RequestCount,
+					ResetAt: nextMonth,
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// IncrementGroupMonthlyStat 增加分组的月度统计
+func (s *GroupService) IncrementGroupMonthlyStat(ctx context.Context, groupID uint, isSuccess bool) error {
+	now := time.Now()
+	currentMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+
+	// 使用 ON DUPLICATE KEY UPDATE 或类似机制
+	// 先尝试查找现有记录
+	var stat models.GroupMonthlyStat
+	result := s.db.WithContext(ctx).
+		Where("group_id = ? AND month = ?", groupID, currentMonth).
+		First(&stat)
+
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		// 创建新记录
+		stat = models.GroupMonthlyStat{
+			Month:        currentMonth,
+			GroupID:      groupID,
+			RequestCount: 1,
+		}
+		if isSuccess {
+			stat.SuccessCount = 1
+		} else {
+			stat.FailureCount = 1
+		}
+		return s.db.WithContext(ctx).Create(&stat).Error
+	}
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// 更新现有记录
+	updates := map[string]interface{}{
+		"request_count": gorm.Expr("request_count + ?", 1),
+	}
+	if isSuccess {
+		updates["success_count"] = gorm.Expr("success_count + ?", 1)
+	} else {
+		updates["failure_count"] = gorm.Expr("failure_count + ?", 1)
+	}
+
+	return s.db.WithContext(ctx).
+		Model(&models.GroupMonthlyStat{}).
+		Where("group_id = ? AND month = ?", groupID, currentMonth).
+		Updates(updates).Error
 }
