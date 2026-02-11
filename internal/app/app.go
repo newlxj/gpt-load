@@ -106,6 +106,7 @@ func (a *App) Start() error {
 			&models.APIKey{},
 			&models.RequestLog{},
 			&models.GroupHourlyStat{},
+			&models.GroupMonthlyStat{},
 		); err != nil {
 			return fmt.Errorf("database auto-migration failed: %w", err)
 		}

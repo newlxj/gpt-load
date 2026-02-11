@@ -23,6 +23,11 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import("@/views/Logs.vue"),
       },
       {
+        path: "group-monitor",
+        name: "groupMonitor",
+        component: () => import("@/views/GroupMonitor.vue"),
+      },
+      {
         path: "settings",
         name: "settings",
         component: () => import("@/views/Settings.vue"),

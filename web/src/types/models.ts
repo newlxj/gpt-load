@@ -88,6 +88,7 @@ export interface Group {
   // 统计信息（列表显示用）
   stats_24_hour?: RequestStats;
   stats_7_day?: RequestStats;
+  stats_30_day?: RequestStats;
   // 限流和有效期字段（存储在 config 中）
   expires_at?: string;              // ISO8601 格式
   max_requests_per_hour?: number;   // 0 表示不限制
@@ -253,4 +254,19 @@ export interface ChartDataset {
 export interface ChartData {
   labels: string[];
   datasets: ChartDataset[];
+}
+
+// 分组使用量数据
+export interface GroupUsageData {
+  group_id: number;
+  hourly_usage: number; // 当前小时已使用次数
+  hourly_limit: number; // 每小时限额（0=不限制）
+  monthly_usage: number; // 当前月已使用次数
+  monthly_limit: number; // 每月限额（0=不限制）
+  last_updated: string; // ISO8601格式时间戳
+}
+
+// 分组监控列表响应
+export interface GroupMonitorResponse {
+  groups: Array<Group & { usage_data?: GroupUsageData }>;
 }

@@ -151,6 +151,7 @@ type GroupStats struct {
 type GroupListStats struct {
 	Stats24Hour RequestStats `json:"stats_24_hour"`
 	Stats7Day   RequestStats `json:"stats_7_day"`
+	Stats30Day  RequestStats `json:"stats_30_day"`
 }
 
 // ConfigOption describes a configurable override exposed to clients.
@@ -626,6 +627,15 @@ func (s *GroupService) GetGroupListStats(ctx context.Context, groupID uint) (*Gr
 		stats.Stats7Day = RequestStats{}
 	} else {
 		stats.Stats7Day = stats7d
+	}
+
+	// 获取30天统计
+	stats30d, err := s.queryGroupHourlyStats(ctx, groupID, 30*24)
+	if err != nil {
+		logrus.WithError(err).WithField("group_id", groupID).Warn("Failed to fetch 30-day stats for group list")
+		stats.Stats30Day = RequestStats{}
+	} else {
+		stats.Stats30Day = stats30d
 	}
 
 	return stats, nil

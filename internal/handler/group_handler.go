@@ -4,6 +4,7 @@ package handler
 import (
 	"encoding/json"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 func (s *Server) handleGroupError(c *gin.Context, err error) bool {
@@ -107,11 +109,12 @@ func (s *Server) ListGroups(c *gin.Context) {
 	for i := range groups {
 		groupResp := s.newGroupResponse(&groups[i])
 
-		// 获取分组的统计信息（24小时和7天）
+		// 获取分组的统计信息（24小时、7天和30天）
 		stats, err := s.GroupService.GetGroupListStats(c.Request.Context(), groups[i].ID)
 		if err == nil && stats != nil {
 			groupResp.Stats24Hour = &stats.Stats24Hour
 			groupResp.Stats7Day = &stats.Stats7Day
+			groupResp.Stats30Day = &stats.Stats30Day
 		}
 
 		groupResponses = append(groupResponses, *groupResp)
@@ -217,6 +220,7 @@ type GroupResponse struct {
 	// 统计信息
 	Stats24Hour         *services.RequestStats `json:"stats_24_hour,omitempty"`
 	Stats7Day           *services.RequestStats `json:"stats_7_day,omitempty"`
+	Stats30Day          *services.RequestStats `json:"stats_30_day,omitempty"`
 }
 
 // newGroupResponse creates a new GroupResponse from a models.Group.
@@ -488,4 +492,196 @@ func (s *Server) GetParentAggregateGroups(c *gin.Context) {
 	}
 
 	response.Success(c, parentGroups)
+}
+
+// GroupUsageData represents the usage data for a group
+type GroupUsageData struct {
+	GroupID      uint   `json:"group_id"`
+	HourlyUsage  int64  `json:"hourly_usage"`
+	HourlyLimit  int64  `json:"hourly_limit"`
+	MonthlyUsage int64  `json:"monthly_usage"`
+	MonthlyLimit int64  `json:"monthly_limit"`
+	LastUpdated  string `json:"last_updated"`
+}
+
+// GroupMonitorResponse represents the response for group monitor API
+type GroupMonitorResponse struct {
+	Groups []GroupMonitorItem `json:"groups"`
+}
+
+// GroupMonitorItem represents a single group item in the monitor response
+type GroupMonitorItem struct {
+	*GroupResponse
+	UsageData *GroupUsageData `json:"usage_data,omitempty"`
+}
+
+// GetGroupMonitor handles the request to get all groups with their usage data
+func (s *Server) GetGroupMonitor(c *gin.Context) {
+	// Get all groups
+	groups, err := s.GroupService.ListGroups(c.Request.Context())
+	if s.handleGroupError(c, err) {
+		return
+	}
+
+	// Get current time boundaries
+	now := time.Now()
+	currentHour := now.Truncate(time.Hour)
+	currentMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+
+	// Prepare result items
+	items := make([]GroupMonitorItem, 0, len(groups))
+
+	for i := range groups {
+		group := &groups[i]
+		groupResp := s.newGroupResponse(group)
+
+		// Get usage data
+		usageData := s.getGroupUsageData(group.ID, currentHour, currentMonth)
+
+		// 获取分组的统计信息（24小时、7天和30天）
+		stats, err := s.GroupService.GetGroupListStats(c.Request.Context(), group.ID)
+		if err == nil && stats != nil {
+			groupResp.Stats24Hour = &stats.Stats24Hour
+			groupResp.Stats7Day = &stats.Stats7Day
+			groupResp.Stats30Day = &stats.Stats30Day
+		}
+
+		items = append(items, GroupMonitorItem{
+			GroupResponse: groupResp,
+			UsageData:    usageData,
+		})
+	}
+
+	response.Success(c, GroupMonitorResponse{
+		Groups: items,
+	})
+}
+
+// getGroupUsageData retrieves the usage data for a specific group
+func (s *Server) getGroupUsageData(groupID uint, currentHour, currentMonth time.Time) *GroupUsageData {
+	// Get limits from group config
+	var hourlyLimit, monthlyLimit int64 = 0, 0
+
+	var group models.Group
+	if err := s.DB.Select("config").Where("id = ?", groupID).First(&group).Error; err == nil {
+		if group.Config != nil {
+			// Parse config into GroupConfig struct to correctly read the rate limit fields
+			var config models.GroupConfig
+			configBytes, _ := json.Marshal(group.Config)
+			_ = json.Unmarshal(configBytes, &config)
+
+			// Read the rate limit values from the parsed config
+			if config.MaxRequestsPerHour != nil && *config.MaxRequestsPerHour > 0 {
+				hourlyLimit = int64(*config.MaxRequestsPerHour)
+			}
+			if config.MaxRequestsPerMonth != nil && *config.MaxRequestsPerMonth > 0 {
+				monthlyLimit = int64(*config.MaxRequestsPerMonth)
+			}
+		}
+	}
+
+	// Get hourly usage from GroupHourlyStat (suppress log if not found)
+	var hourlyStat models.GroupHourlyStat
+	hourlyUsage := int64(0)
+	s.DB.Session(&gorm.Session{AllowGlobalUpdate: false}).
+		Where("time = ? AND group_id = ?", currentHour, groupID).
+		First(&hourlyStat).
+		// Only update usage if record exists (ignore ErrRecordNotFound)
+		Scan(&hourlyStat)
+	if hourlyStat.ID > 0 {
+		hourlyUsage = hourlyStat.SuccessCount + hourlyStat.FailureCount
+	}
+
+	// Get monthly usage from GroupMonthlyStat (suppress log if not found)
+	var monthlyStat models.GroupMonthlyStat
+	monthlyUsage := int64(0)
+	s.DB.Session(&gorm.Session{AllowGlobalUpdate: false}).
+		Where("month = ? AND group_id = ?", currentMonth, groupID).
+		First(&monthlyStat).
+		// Only update usage if record exists (ignore ErrRecordNotFound)
+		Scan(&monthlyStat)
+	if monthlyStat.ID > 0 {
+		monthlyUsage = monthlyStat.RequestCount
+	}
+
+	// If no monthly stat, calculate from hourly stats for the current month
+	if monthlyUsage == 0 && monthlyLimit > 0 {
+		var sum int64
+		s.DB.Model(&models.GroupHourlyStat{}).
+			Where("group_id = ? AND time >= ? AND time < ?", groupID, currentMonth, currentMonth.AddDate(0, 1, 0)).
+			Select("COALESCE(SUM(success_count + failure_count), 0)").
+			Scan(&sum)
+		monthlyUsage = sum
+	}
+
+	return &GroupUsageData{
+		GroupID:      groupID,
+		HourlyUsage:  hourlyUsage,
+		HourlyLimit:  hourlyLimit,
+		MonthlyUsage: monthlyUsage,
+		MonthlyLimit: monthlyLimit,
+		LastUpdated:  time.Now().Format(time.RFC3339),
+	}
+}
+
+// GroupSortOrder represents the sort order for groups
+type GroupSortOrder struct {
+	Order []uint `json:"order"`
+}
+
+// GetGroupSortOrder handles getting the group sort order
+func (s *Server) GetGroupSortOrder(c *gin.Context) {
+	order, err := loadGroupSortOrder()
+	if err != nil {
+		// 文件不存在时返回空数组
+		response.Success(c, []uint{})
+		return
+	}
+	response.Success(c, order)
+}
+
+// SaveGroupSortOrder handles saving the group sort order
+func (s *Server) SaveGroupSortOrder(c *gin.Context) {
+	var req []uint
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, app_errors.NewAPIError(app_errors.ErrInvalidJSON, err.Error()))
+		return
+	}
+
+	if err := saveGroupSortOrder(req); err != nil {
+		response.ErrorI18nFromAPIError(c, app_errors.ErrInternalServer, "groupMonitor.saveSortFailed")
+		return
+	}
+
+	response.SuccessI18n(c, "success.sort_order_saved", nil)
+}
+
+// getSortOrderFilePath returns the path to the sort order JSON file
+func getSortOrderFilePath() string {
+	return "group_sort_order.json"
+}
+
+// loadGroupSortOrder loads the group sort order from JSON file
+func loadGroupSortOrder() ([]uint, error) {
+	data, err := os.ReadFile(getSortOrderFilePath())
+	if err != nil {
+		return nil, err
+	}
+
+	var order []uint
+	if err := json.Unmarshal(data, &order); err != nil {
+		return nil, err
+	}
+
+	return order, nil
+}
+
+// saveGroupSortOrder saves the group sort order to JSON file
+func saveGroupSortOrder(order []uint) error {
+	data, err := json.MarshalIndent(order, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(getSortOrderFilePath(), data, 0644)
 }

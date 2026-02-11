@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { type MenuOption } from "naive-ui";
 import { computed, h, watch } from "vue";
-import { RouterLink, useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { RouterLink, useRoute } from "vue-router";
 
 const { t } = useI18n();
 
@@ -19,6 +19,7 @@ const menuOptions = computed<MenuOption[]>(() => {
   const options: MenuOption[] = [
     renderMenuItem("dashboard", t("nav.dashboard"), "📊"),
     renderMenuItem("keys", t("nav.keys"), "🔑"),
+    renderMenuItem("groupMonitor", t("nav.groupMonitor"), "📈"),
     renderMenuItem("logs", t("nav.logs"), "📋"),
     renderMenuItem("settings", t("nav.settings"), "⚙️"),
   ];
@@ -86,7 +87,7 @@ function renderMenuItem(key: string, label: string, icon: string): MenuOption {
 }
 
 :deep(.n-menu--vertical .n-menu-item) {
-  margin: 4px 8px;
+  margin: 4px 4px;
 }
 
 :deep(.n-menu-item:hover) {

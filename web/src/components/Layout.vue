@@ -27,10 +27,8 @@ const toggleMenu = () => {
     <n-layout-header class="layout-header">
       <div class="header-content">
         <div class="header-brand">
-          <div class="brand-icon">
-            <img src="@/assets/logo.png" alt="" />
-          </div>
-          <h1 v-if="!isMobile" class="brand-title">GPT代理平台</h1>
+          <div class="brand-icon"></div>
+          <h1 v-if="!isMobile" class="brand-title">AI开放平台</h1>
         </div>
 
         <nav v-if="!isMobile" class="header-nav">
@@ -140,7 +138,7 @@ const toggleMenu = () => {
 .brand-title {
   font-size: 1.4rem;
   font-weight: 700;
-  background: var(--primary-gradient);
+  background: #000;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
