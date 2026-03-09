@@ -2,8 +2,8 @@
 
 [English](README.md) | [中文](README_CN.md) | 日本語
 
-[![Release](https://img.shields.io/github/v/release/tbphp/aimanager)](https://github.com/tbphp/aimanager/releases)
-![Go Version](https://img.shields.io/badge/Go-1.23+-blue.svg)
+[![Release](https://img.shields.io/github/v/release/tbphp/gpt-load)](https://github.com/tbphp/gpt-load/releases)
+![Go Version](https://img.shields.io/badge/Go-1.24+-blue.svg)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 複数のAIサービスを統合する必要がある企業や開発者向けに特別に設計された、高性能でエンタープライズグレードのAI APIトランスペアレントプロキシサービス。Goで構築され、インテリジェントなキー管理、ロードバランシング、包括的な監視機能を備え、高並行性の本番環境向けに設計されています。
@@ -39,7 +39,7 @@ aimanagerは、さまざまなAIサービスプロバイダーのネイティブ
 
 ### システム要件
 
-- Go 1.23+（ソースビルド用）
+- Go 1.24+（ソースビルド用）
 - Docker（コンテナ化デプロイメント用）
 - MySQL、PostgreSQL、またはSQLite（データベースストレージ用）
 - Redis（キャッシュと分散調整用、オプション）
@@ -406,6 +406,11 @@ Web管理インターフェースで**プロキシキー**を設定します。�
 
 ### 3. OpenAIインターフェースの例
 
+GPT-Load は現在、2種類の OpenAI 互換グループタイプをサポートしています：
+
+- `openai`（OpenAI Chat Completions 形式）
+- `openai-response`（OpenAI Responses 形式）
+
 `openai`という名前のグループが作成されたと仮定：
 
 **元の呼び出し：**
@@ -430,6 +435,15 @@ curl -X POST http://localhost:3001/proxy/openai/v1/chat/completions \
 
 - `https://api.openai.com`を`http://localhost:3001/proxy/openai`に置き換える
 - 元のAPIキーを**プロキシキー**に置き換える
+
+**OpenAI Responses 形式の例（`openai-response` グループ）：**
+
+```bash
+curl -X POST http://localhost:3001/proxy/openai-response/v1/responses \
+  -H "Authorization: Bearer your-proxy-key" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-4.1-mini", "input": "Hello"}'
+```
 
 ### 4. Geminiインターフェースの例
 
@@ -487,13 +501,19 @@ curl -X POST http://localhost:3001/proxy/anthropic/v1/messages \
 
 ### 6. サポートされているインターフェース
 
-**OpenAIフォーマット：**
+**OpenAI Chat Completions フォーマット（`openai`）：**
 
 - `/v1/chat/completions` - チャット会話
 - `/v1/completions` - テキスト補完
 - `/v1/embeddings` - テキスト埋め込み
 - `/v1/models` - モデルリスト
 - その他すべてのOpenAI互換インターフェース
+
+**OpenAI Responses フォーマット（`openai-response`）：**
+
+- `/v1/responses` - 統合レスポンス生成
+- `/v1/models` - モデルリスト
+- その他すべての OpenAI Responses 互換インターフェース
 
 **Geminiフォーマット：**
 

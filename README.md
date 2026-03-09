@@ -2,8 +2,8 @@
 
 English | [中文](README_CN.md) | [日本語](README_JP.md)
 
-[![Release](https://img.shields.io/github/v/release/tbphp/aimanager)](https://github.com/tbphp/aimanager/releases)
-![Go Version](https://img.shields.io/badge/Go-1.23+-blue.svg)
+[![Release](https://img.shields.io/github/v/release/tbphp/gpt-load)](https://github.com/tbphp/gpt-load/releases)
+![Go Version](https://img.shields.io/badge/Go-1.24+-blue.svg)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A high-performance, enterprise-grade AI API transparent proxy service designed specifically for enterprises and developers who need to integrate multiple AI services. Built with Go, featuring intelligent key management, load balancing, and comprehensive monitoring capabilities, designed for high-concurrency production environments.
@@ -39,7 +39,7 @@ aimanager serves as a transparent proxy service, completely preserving the nativ
 
 ### System Requirements
 
-- Go 1.23+ (for source builds)
+- Go 1.24+ (for source builds)
 - Docker (for containerized deployment)
 - MySQL, PostgreSQL, or SQLite (for database storage)
 - Redis (for caching and distributed coordination, optional)
@@ -406,6 +406,11 @@ Configure **Proxy Keys** in the web management interface, which supports system-
 
 ### 3. OpenAI Interface Example
 
+GPT-Load currently supports two OpenAI-compatible group types:
+
+- `openai` (OpenAI Chat Completions format)
+- `openai-response` (OpenAI Responses format)
+
 Assuming a group named `openai` was created:
 
 **Original invocation:**
@@ -430,6 +435,15 @@ curl -X POST http://localhost:3001/proxy/openai/v1/chat/completions \
 
 - Replace `https://api.openai.com` with `http://localhost:3001/proxy/openai`
 - Replace original API Key with the **Proxy Key**
+
+**OpenAI Responses format example (`openai-response` group):**
+
+```bash
+curl -X POST http://localhost:3001/proxy/openai-response/v1/responses \
+  -H "Authorization: Bearer your-proxy-key" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-4.1-mini", "input": "Hello"}'
+```
 
 ### 4. Gemini Interface Example
 
@@ -487,13 +501,19 @@ curl -X POST http://localhost:3001/proxy/anthropic/v1/messages \
 
 ### 6. Supported Interfaces
 
-**OpenAI Format:**
+**OpenAI Chat Completions Format (`openai`):**
 
 - `/v1/chat/completions` - Chat conversations
 - `/v1/completions` - Text completion
 - `/v1/embeddings` - Text embeddings
 - `/v1/models` - Model list
 - And all other OpenAI-compatible interfaces
+
+**OpenAI Responses Format (`openai-response`):**
+
+- `/v1/responses` - Unified response generation
+- `/v1/models` - Model list
+- And all other OpenAI Responses-compatible interfaces
 
 **Gemini Format:**
 

@@ -41,7 +41,8 @@ function getDefaultLocale(): Locale {
 }
 
 // 创建 i18n 实例
-const defaultLocale = getDefaultLocale();
+getDefaultLocale();
+const defaultLocale = "zh-CN"; // getDefaultLocale();
 const i18n = createI18n({
   legacy: false, // 使用 Composition API 模式
   locale: defaultLocale,

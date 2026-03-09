@@ -2,8 +2,8 @@
 
 [English](README.md) | 中文 | [日本語](README_JP.md)
 
-[![Release](https://img.shields.io/github/v/release/tbphp/aimanager)](https://github.com/tbphp/aimanager/releases)
-![Go Version](https://img.shields.io/badge/Go-1.23+-blue.svg)
+[![Release](https://img.shields.io/github/v/release/tbphp/gpt-load)](https://github.com/tbphp/gpt-load/releases)
+![Go Version](https://img.shields.io/badge/Go-1.24+-blue.svg)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 一个高性能、企业级的 AI 接口透明代理服务，专门为需要集成多种 AI 服务的企业和开发者设计。采用 Go 语言开发，具备智能密钥管理、负载均衡和完善的监控功能，专为高并发生产环境而设计。
@@ -39,7 +39,7 @@ aimanager 作为透明代理服务，完整保留各 AI 服务商的原生 API �
 
 ### 环境要求
 
-- Go 1.23+ (源码构建)
+- Go 1.24+ (源码构建)
 - Docker (容器化部署)
 - MySQL, PostgreSQL, 或 SQLite (数据库存储)
 - Redis (缓存和分布式协调，可选)
@@ -406,6 +406,11 @@ http://localhost:3001/proxy/{group_name}/{原始API路径}
 
 ### 3. OpenAI 接口调用示例
 
+GPT-Load 当前支持两种 OpenAI 兼容分组类型：
+
+- `openai`（OpenAI Chat Completions 格式）
+- `openai-response`（OpenAI Responses 格式）
+
 假设创建了名为 `openai` 的分组：
 
 **原始调用方式：**
@@ -430,6 +435,15 @@ curl -X POST http://localhost:3001/proxy/openai/v1/chat/completions \
 
 - 将 `https://api.openai.com` 替换为 `http://localhost:3001/proxy/openai`
 - 将原始 API Key 替换为**代理密钥**
+
+**OpenAI Responses 格式示例（`openai-response` 分组）：**
+
+```bash
+curl -X POST http://localhost:3001/proxy/openai-response/v1/responses \
+  -H "Authorization: Bearer your-proxy-key" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-4.1-mini", "input": "Hello"}'
+```
 
 ### 4. Gemini 接口调用示例
 
@@ -487,13 +501,19 @@ curl -X POST http://localhost:3001/proxy/anthropic/v1/messages \
 
 ### 6. 支持的接口
 
-**OpenAI 格式：**
+**OpenAI Chat Completions 格式（`openai`）：**
 
 - `/v1/chat/completions` - 聊天对话
 - `/v1/completions` - 文本补全
 - `/v1/embeddings` - 文本嵌入
 - `/v1/models` - 模型列表
 - 以及其他所有 OpenAI 兼容接口
+
+**OpenAI Responses 格式（`openai-response`）：**
+
+- `/v1/responses` - 统一响应生成
+- `/v1/models` - 模型列表
+- 以及其他所有 OpenAI Responses 兼容接口
 
 **Gemini 格式：**
 
