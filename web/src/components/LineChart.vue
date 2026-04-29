@@ -8,9 +8,26 @@ import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
 
+interface Props {
+  fixedGroupId?: number;
+  showGroupSelector?: boolean;
+  showRangeSelector?: boolean;
+  defaultHours?: number;
+  title?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  fixedGroupId: undefined,
+  showGroupSelector: true,
+  showRangeSelector: false,
+  defaultHours: 24,
+  title: "",
+});
+
 // 图表数据
 const chartData = ref<ChartData | null>(null);
-const selectedGroup = ref<number | null>(null);
+const selectedGroup = ref<number | null>(props.fixedGroupId ?? null);
+const selectedHours = ref(props.defaultHours);
 const loading = ref(true);
 const animationProgress = ref(0);
 const hoveredPoint = ref<{
@@ -37,6 +54,21 @@ const padding = { top: 40, right: 40, bottom: 60, left: 80 };
 
 // 格式化分组选项
 const groupOptions = ref<Array<{ label: string; value: number | null }>>([]);
+const timeRangeOptions = [
+  { label: "6h", value: 6 },
+  { label: "12h", value: 12 },
+  { label: "24h", value: 24 },
+  { label: "48h", value: 48 },
+  { label: "7d", value: 24 * 7 },
+  { label: "30d", value: 24 * 30 },
+];
+const chartTitle = computed(() => props.title || t("charts.requestTrend24h"));
+const effectiveGroupId = computed<number | undefined>(() => {
+  if (props.fixedGroupId !== undefined) {
+    return props.fixedGroupId;
+  }
+  return selectedGroup.value ?? undefined;
+});
 
 // 计算有效的绘图区域
 const plotWidth = chartWidth - padding.left - padding.right;
@@ -326,6 +358,10 @@ const hideTooltip = () => {
 
 // 获取分组列表
 const fetchGroups = async () => {
+  if (!props.showGroupSelector) {
+    return;
+  }
+
   try {
     const response = await getGroupList();
     groupOptions.value = [
@@ -344,7 +380,7 @@ const fetchGroups = async () => {
 const fetchChartData = async () => {
   try {
     loading.value = true;
-    const response = await getDashboardChart(selectedGroup.value || undefined);
+    const response = await getDashboardChart(effectiveGroupId.value, selectedHours.value);
     chartData.value = response.data;
 
     // 延迟启动动画，确保DOM更新完成
@@ -359,12 +395,21 @@ const fetchChartData = async () => {
 };
 
 // 监听分组选择变化
-watch(selectedGroup, () => {
+watch(
+  () => props.fixedGroupId,
+  value => {
+    selectedGroup.value = value ?? null;
+  }
+);
+
+watch([selectedGroup, selectedHours], () => {
   fetchChartData();
 });
 
 onMounted(() => {
-  fetchGroups();
+  if (props.showGroupSelector) {
+    fetchGroups();
+  }
   fetchChartData();
 });
 </script>
@@ -373,16 +418,28 @@ onMounted(() => {
   <div class="chart-container">
     <div class="chart-header">
       <div class="chart-title-section">
-        <h3 class="chart-title">{{ t("charts.requestTrend24h") }}</h3>
+        <h3 class="chart-title">{{ chartTitle }}</h3>
       </div>
-      <n-select
-        v-model:value="selectedGroup"
-        :options="groupOptions as any"
-        :placeholder="t('charts.allGroups')"
-        size="small"
-        style="width: 150px"
-        clearable
-      />
+      <div class="chart-controls">
+        <n-select
+          v-if="props.showRangeSelector"
+          v-model:value="selectedHours"
+          :options="timeRangeOptions as any"
+          :placeholder="t('common.select')"
+          size="small"
+          style="width: 110px"
+          :clearable="false"
+        />
+        <n-select
+          v-if="props.showGroupSelector"
+          v-model:value="selectedGroup"
+          :options="groupOptions as any"
+          :placeholder="t('charts.allGroups')"
+          size="small"
+          style="width: 150px"
+          clearable
+        />
+      </div>
     </div>
 
     <div v-if="chartData" class="chart-content">
@@ -595,6 +652,12 @@ onMounted(() => {
 
 .chart-title-section {
   flex: 1;
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .chart-title {
@@ -871,6 +934,12 @@ onMounted(() => {
     flex-direction: column;
     gap: 12px;
     align-items: flex-start;
+  }
+
+  .chart-controls {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .chart-wrapper {

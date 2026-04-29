@@ -12,9 +12,14 @@ export const getDashboardStats = () => {
  * 获取仪表盘图表数据
  * @param groupId 可选的分组ID
  */
-export const getDashboardChart = (groupId?: number) => {
+export const getDashboardChart = (groupId?: number, hours = 24) => {
+  const params: Record<string, number> = { hours };
+  if (groupId !== undefined) {
+    params.groupId = groupId;
+  }
+
   return http.get<ChartData>("/dashboard/chart", {
-    params: groupId ? { groupId } : {},
+    params,
   });
 };
 

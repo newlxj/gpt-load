@@ -465,6 +465,19 @@ func (s *GroupService) DeleteGroup(ctx context.Context, id uint) error {
 		return app_errors.ParseDBError(err)
 	}
 
+	// Delete all request logs associated with this group.
+	if err := tx.Where("group_id = ? OR parent_group_id = ?", id, id).Delete(&models.RequestLog{}).Error; err != nil {
+		return app_errors.ParseDBError(err)
+	}
+
+	// Delete hourly/monthly usage stats for this group.
+	if err := tx.Where("group_id = ?", id).Delete(&models.GroupHourlyStat{}).Error; err != nil {
+		return app_errors.ParseDBError(err)
+	}
+	if err := tx.Where("group_id = ?", id).Delete(&models.GroupMonthlyStat{}).Error; err != nil {
+		return app_errors.ParseDBError(err)
+	}
+
 	if err := tx.Where("group_id = ?", id).Delete(&models.APIKey{}).Error; err != nil {
 		return app_errors.ErrDatabase
 	}

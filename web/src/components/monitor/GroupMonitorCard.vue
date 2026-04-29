@@ -2,7 +2,14 @@
 import type { Group, GroupUsageData } from "@/types/models";
 import { copy as copyToClipboard } from "@/utils/clipboard";
 import { getGroupDisplayName } from "@/utils/display";
-import { KeyOutline, LinkOutline, TimeOutline } from "@vicons/ionicons5";
+import {
+  CopyOutline,
+  KeyOutline,
+  LinkOutline,
+  StatsChartOutline,
+  TimeOutline,
+  TrashOutline,
+} from "@vicons/ionicons5";
 import { NCard, NIcon, NProgress, NTag, useMessage } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -16,6 +23,9 @@ interface Props {
 
 interface Emits {
   (e: "edit", group: Group): void;
+  (e: "trend", group: Group): void;
+  (e: "copy", group: Group): void;
+  (e: "delete", group: Group): void;
 }
 
 const props = defineProps<Props>();
@@ -126,14 +136,15 @@ async function copyProxyKeys(e: Event) {
     message.warning(t("keys.noKeysToCopy"));
     return;
   }
-  const success = await copyToClipboard(props.group.proxy_keys);
+
+  const copyContent = `分组ID（${getGroupDisplayName(props.group)}）\n令牌（${props.group.proxy_keys}）`;
+  const success = await copyToClipboard(copyContent);
   if (success) {
     message.success(t("keys.keysCopiedToClipboard"));
   } else {
     message.error(t("keys.copyFailedManual"));
   }
 }
-
 // 复制端点地址
 async function copyEndpoint(e: Event) {
   e.stopPropagation();
@@ -147,6 +158,21 @@ async function copyEndpoint(e: Event) {
   } else {
     message.error(t("keys.copyFailedManual"));
   }
+}
+
+function copyGroup(e: Event) {
+  e.stopPropagation();
+  emit("copy", props.group);
+}
+
+function viewTrend(e: Event) {
+  e.stopPropagation();
+  emit("trend", props.group);
+}
+
+function deleteGroup(e: Event) {
+  e.stopPropagation();
+  emit("delete", props.group);
 }
 
 function handleCardClick() {
@@ -187,9 +213,28 @@ function handleCardClick() {
                   <KeyOutline />
                 </n-icon>
               </button>
+              <button class="action-btn" @click="copyGroup" :title="t('keys.copyGroup')">
+                <n-icon :size="14">
+                  <CopyOutline />
+                </n-icon>
+              </button>
+              <button class="action-btn" @click="viewTrend" :title="t('charts.requestTrend24h')">
+                <n-icon :size="14">
+                  <StatsChartOutline />
+                </n-icon>
+              </button>
               <button class="action-btn" @click="copyEndpoint" :title="t('keys.copyUrl')">
                 <n-icon :size="14">
                   <LinkOutline />
+                </n-icon>
+              </button>
+              <button
+                class="action-btn action-btn-danger"
+                @click="deleteGroup"
+                :title="t('keys.deleteGroup')"
+              >
+                <n-icon :size="14">
+                  <TrashOutline />
                 </n-icon>
               </button>
             </div>
@@ -359,6 +404,11 @@ function handleCardClick() {
 
 .action-btn:hover {
   background: var(--primary-color);
+  color: #fff;
+}
+
+.action-btn-danger:hover {
+  background: #d03050;
   color: #fff;
 }
 

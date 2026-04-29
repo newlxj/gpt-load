@@ -1,15 +1,20 @@
 <script setup lang="ts">
+import { keysApi } from "@/api/keys";
+import GroupCopyModal from "@/components/keys/GroupCopyModal.vue";
 import { monitorApi } from "@/api/monitor";
 import GroupFormModal from "@/components/keys/GroupFormModal.vue";
 import GroupMonitorCard from "@/components/monitor/GroupMonitorCard.vue";
+import GroupTrendDialog from "@/components/monitor/GroupTrendDialog.vue";
 import type { Group, GroupUsageData } from "@/types/models";
-import { ReloadOutline } from "@vicons/ionicons5";
-import { NButton, NEmpty, NIcon, NSpin, useMessage } from "naive-ui";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { getGroupDisplayName } from "@/utils/display";
+import { AddOutline, ReloadOutline } from "@vicons/ionicons5";
+import { NButton, NEmpty, NIcon, NInput, NSpin, useDialog, useMessage } from "naive-ui";
+import { computed, h, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
 const message = useMessage();
+const dialog = useDialog();
 
 interface GroupWithUsage extends Group {
   usage_data?: GroupUsageData;
@@ -22,6 +27,12 @@ const rawGroups = ref<GroupWithUsage[]>([]); // 原始数据（未排序）
 const groupSortOrder = ref<number[]>([]); // 分组ID排序
 const selectedGroup = ref<Group | null>(null);
 const showEditModal = ref(false);
+const selectedCopyGroup = ref<Group | null>(null);
+const showCopyModal = ref(false);
+const selectedTrendGroup = ref<Group | null>(null);
+const showTrendModal = ref(false);
+const deletingGroup = ref(false);
+const deleteConfirmInput = ref("");
 const currentFilter = ref<FilterType>("all");
 
 // 拖拽相关状态
@@ -105,10 +116,94 @@ function refreshData() {
   loadMonitorData();
 }
 
+function handleCreateGroup() {
+  selectedGroup.value = null;
+  showEditModal.value = true;
+}
+
 // 编辑分组
 function handleEditGroup(group: Group) {
   selectedGroup.value = group;
   showEditModal.value = true;
+}
+
+function handleCopyGroup(group: Group) {
+  selectedCopyGroup.value = group;
+  showCopyModal.value = true;
+}
+
+async function handleCopyGroupSuccess() {
+  showCopyModal.value = false;
+  selectedCopyGroup.value = null;
+  await loadMonitorData();
+}
+
+function handleViewTrend(group: Group) {
+  selectedTrendGroup.value = group;
+  showTrendModal.value = true;
+}
+
+function handleDeleteGroup(group: Group) {
+  if (!group.id || deletingGroup.value) {
+    return;
+  }
+
+  dialog.warning({
+    title: t("keys.deleteGroup"),
+    content: t("keys.confirmDeleteGroup", { name: getGroupDisplayName(group) }),
+    positiveText: t("common.confirm"),
+    negativeText: t("common.cancel"),
+    onPositiveClick: () => {
+      deleteConfirmInput.value = "";
+      dialog.create({
+        title: t("keys.enterGroupNameToConfirm"),
+        content: () =>
+          h("div", null, [
+            h("p", null, [
+              t("keys.dangerousOperation"),
+              h("strong", { style: { color: "#d03050" } }, group.name),
+              t("keys.toConfirmDeletion"),
+            ]),
+            h(NInput, {
+              value: deleteConfirmInput.value,
+              "onUpdate:value": (value: string) => {
+                deleteConfirmInput.value = value;
+              },
+              placeholder: t("keys.enterGroupName"),
+            }),
+          ]),
+        positiveText: t("keys.confirmDelete"),
+        negativeText: t("common.cancel"),
+        onPositiveClick: async () => {
+          if (deleteConfirmInput.value !== group.name) {
+            message.error(t("keys.incorrectGroupName"));
+            return false;
+          }
+
+          deletingGroup.value = true;
+          try {
+            await keysApi.deleteGroup(group.id!);
+
+            if (selectedGroup.value?.id === group.id) {
+              showEditModal.value = false;
+              selectedGroup.value = null;
+            }
+            if (selectedTrendGroup.value?.id === group.id) {
+              showTrendModal.value = false;
+            }
+            if (selectedCopyGroup.value?.id === group.id) {
+              showCopyModal.value = false;
+              selectedCopyGroup.value = null;
+            }
+
+            await loadMonitorData();
+          } finally {
+            deletingGroup.value = false;
+          }
+        },
+      });
+    },
+  });
 }
 
 // 分组更新完成
@@ -124,6 +219,18 @@ function handleEditModalClose() {
   showEditModal.value = false;
   selectedGroup.value = null;
 }
+
+watch(showTrendModal, show => {
+  if (!show) {
+    selectedTrendGroup.value = null;
+  }
+});
+
+watch(showCopyModal, show => {
+  if (!show) {
+    selectedCopyGroup.value = null;
+  }
+});
 
 // 组件挂载时加载数据并启动自动刷新
 onMounted(async () => {
@@ -297,6 +404,12 @@ function handleDragEnd() {
         </div>
       </div>
       <div class="header-actions">
+        <n-button type="primary" @click="handleCreateGroup">
+          <template #icon>
+            <n-icon :component="AddOutline" />
+          </template>
+          {{ t("keys.createGroup") }}
+        </n-button>
         <n-button @click="refreshData" :loading="loading" secondary>
           <template #icon>
             <n-icon :component="ReloadOutline" />
@@ -331,6 +444,9 @@ function handleDragEnd() {
             :group="group"
             :usage-data="group.usage_data"
             @edit="handleEditGroup"
+            @copy="handleCopyGroup"
+            @trend="handleViewTrend"
+            @delete="handleDeleteGroup"
           />
         </div>
       </div>
@@ -342,6 +458,15 @@ function handleDragEnd() {
       :group="selectedGroup"
       @success="handleGroupUpdated"
       @update:show="handleEditModalClose"
+    />
+    <group-trend-dialog
+      v-model:show="showTrendModal"
+      :group="selectedTrendGroup"
+    />
+    <group-copy-modal
+      v-model:show="showCopyModal"
+      :source-group="selectedCopyGroup"
+      @success="handleCopyGroupSuccess"
     />
   </div>
 </template>

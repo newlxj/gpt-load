@@ -7,6 +7,7 @@ import (
 	"aimanager/internal/models"
 	"aimanager/internal/response"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -117,16 +118,35 @@ func (s *Server) Stats(c *gin.Context) {
 // Chart Get dashboard chart data
 func (s *Server) Chart(c *gin.Context) {
 	groupID := c.Query("groupId")
+	groupIDValue := uint(0)
+	if groupID != "" {
+		parsedGroupID, err := strconv.ParseUint(groupID, 10, 32)
+		if err != nil || parsedGroupID == 0 {
+			response.Error(c, app_errors.NewAPIError(app_errors.ErrBadRequest, "groupId must be a positive integer"))
+			return
+		}
+		groupIDValue = uint(parsedGroupID)
+	}
+
+	hours := 24
+	if hoursQuery := c.Query("hours"); hoursQuery != "" {
+		parsedHours, err := strconv.Atoi(hoursQuery)
+		if err != nil || parsedHours <= 0 || parsedHours > 24*30 {
+			response.Error(c, app_errors.NewAPIError(app_errors.ErrBadRequest, "hours must be between 1 and 720"))
+			return
+		}
+		hours = parsedHours
+	}
 
 	now := time.Now()
 	endHour := now.Truncate(time.Hour)
-	startHour := endHour.Add(-23 * time.Hour)
+	startHour := endHour.Add(time.Duration(-(hours - 1)) * time.Hour)
 
 	var hourlyStats []models.GroupHourlyStat
 	query := s.DB.Table("group_hourly_stats").
 		Where("time >= ? AND time < ?", startHour, endHour.Add(time.Hour))
 	if groupID != "" {
-		query = query.Where("group_id = ?", groupID)
+		query = query.Where("group_id = ?", groupIDValue)
 	} else {
 		query = query.Where("group_id NOT IN (?)",
 			s.DB.Table("groups").Select("id").Where("group_type = ?", "aggregate"))
@@ -149,7 +169,7 @@ func (s *Server) Chart(c *gin.Context) {
 	var labels []string
 	var successData, failureData []int64
 
-	for i := range 24 {
+	for i := 0; i < hours; i++ {
 		hour := startHour.Add(time.Duration(i) * time.Hour)
 		labels = append(labels, hour.Format(time.RFC3339))
 
