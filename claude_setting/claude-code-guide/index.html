@@ -1,0 +1,2148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code 实战经验手册</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0f1117;
+    --sidebar-bg: #161b27;
+    --card-bg: #1e2535;
+    --card-hover: #252d42;
+    --accent: #7c6af7;
+    --accent2: #5eead4;
+    --accent3: #fb923c;
+    --accent4: #f472b6;
+    --accent5: #34d399;
+    --text: #e2e8f0;
+    --text-muted: #8892a4;
+    --border: #2a3347;
+    --tag-bg: #2a3347;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ====== SIDEBAR ====== */
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--accent), #a855f7);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo h1 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .logo p {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .search-box {
+    margin-top: 16px;
+    position: relative;
+  }
+
+  .search-box input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px 8px 34px;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-box input:focus { border-color: var(--accent); }
+  .search-box input::placeholder { color: var(--text-muted); }
+
+  .search-box::before {
+    content: '🔍';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 0;
+  }
+
+  .sidebar-nav::-webkit-scrollbar { width: 4px; }
+  .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .nav-section-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    padding: 8px 20px 4px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    cursor: pointer;
+    border-radius: 0;
+    transition: all 0.15s;
+    border-left: 3px solid transparent;
+    position: relative;
+  }
+
+  .nav-item:hover { background: var(--card-bg); }
+
+  .nav-item.active {
+    background: rgba(124, 106, 247, 0.12);
+    border-left-color: var(--accent);
+  }
+
+  .nav-item .nav-icon { font-size: 15px; width: 20px; text-align: center; }
+
+  .nav-item .nav-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nav-item.active .nav-label { color: var(--text); font-weight: 500; }
+
+  .nav-badge {
+    background: var(--tag-bg);
+    color: var(--text-muted);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+  }
+
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  /* ====== MAIN CONTENT ====== */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+
+  .main::-webkit-scrollbar { width: 6px; }
+  .main::-webkit-scrollbar-track { background: transparent; }
+  .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .content-section {
+    display: none;
+    padding: 32px 40px;
+    max-width: 900px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .content-section.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-hero {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-icon {
+    font-size: 40px;
+    line-height: 1;
+  }
+
+  .hero-text h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .hero-text p {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    max-width: 620px;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin: 6px 4px 0 0;
+  }
+
+  /* Cards */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card:hover {
+    background: var(--card-hover);
+    border-color: rgba(124, 106, 247, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--card-accent, var(--accent));
+    border-radius: 3px 0 0 3px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .card-icon { font-size: 20px; }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .card-badge {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  .badge-tip { background: rgba(94, 234, 212, 0.15); color: var(--accent2); }
+  .badge-warn { background: rgba(251, 146, 60, 0.15); color: var(--accent3); }
+  .badge-danger { background: rgba(244, 114, 182, 0.15); color: var(--accent4); }
+  .badge-good { background: rgba(52, 211, 153, 0.15); color: var(--accent5); }
+
+  .card-body {
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: #b8c4d6;
+  }
+
+  .card-body p { margin-bottom: 10px; }
+  .card-body p:last-child { margin-bottom: 0; }
+
+  /* Code blocks */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 12px 0;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .code-block .comment { color: #6272a4; }
+  .code-block .string { color: #f1fa8c; }
+  .code-block .keyword { color: #ff79c6; }
+  .code-block .func { color: #50fa7b; }
+  .code-block .var { color: #8be9fd; }
+
+  .code-lang {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: inherit;
+  }
+
+  /* Tips list */
+  .tips-list {
+    list-style: none;
+    margin: 12px 0;
+  }
+
+  .tips-list li {
+    display: flex;
+    gap: 10px;
+    padding: 7px 0;
+    font-size: 13.5px;
+    color: #b8c4d6;
+    line-height: 1.6;
+    border-bottom: 1px solid rgba(42,51,71,0.5);
+  }
+
+  .tips-list li:last-child { border-bottom: none; }
+  .tips-list li::before { content: attr(data-icon); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  /* Highlight box */
+  .highlight-box {
+    background: rgba(124, 106, 247, 0.08);
+    border: 1px solid rgba(124, 106, 247, 0.25);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 14px 0;
+    font-size: 13.5px;
+    color: #c4bffc;
+    line-height: 1.7;
+  }
+
+  .highlight-box.warn {
+    background: rgba(251, 146, 60, 0.08);
+    border-color: rgba(251, 146, 60, 0.25);
+    color: #fcd19c;
+  }
+
+  .highlight-box.success {
+    background: rgba(52, 211, 153, 0.08);
+    border-color: rgba(52, 211, 153, 0.25);
+    color: #a7f3d0;
+  }
+
+  .section-subtitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 28px 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-subtitle::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Two col */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 700px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  /* Overview stats */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div>
+        <h1>Claude Code 手册</h1>
+        <p>实战经验 & 避坑指南</p>
+      </div>
+    </div>
+    <div class="search-box">
+      <input type="text" placeholder="搜索主题..." id="searchInput" oninput="filterNav(this.value)">
+    </div>
+  </div>
+
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-section-title">快速导航</div>
+
+    <div class="nav-item active" onclick="switchSection('overview', this)">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">总览与入门</span>
+      <span class="nav-badge">必读</span>
+    </div>
+
+    <div class="nav-section-title">多人协同</div>
+
+    <div class="nav-item" onclick="switchSection('git-pr', this)">
+      <span class="nav-icon">🔀</span>
+      <span class="nav-label">Git PR 自动化管理</span>
+    </div>
+
+
+    <div class="nav-item" onclick="switchSection('conflict', this)">
+      <span class="nav-icon">⚔️</span>
+      <span class="nav-label">冲突处理与代码合并</span>
+    </div>
+
+    <div class="nav-section-title">提示词工程</div>
+
+    <div class="nav-item" onclick="switchSection('prompt', this)">
+      <span class="nav-icon">✍️</span>
+      <span class="nav-label">核心 Prompt 技巧</span>
+    </div>
+
+    <div class="nav-item" onclick="switchSection('prompt-legacy', this)">
+      <span class="nav-icon">🏚️</span>
+      <span class="nav-label">历史项目改造模板</span>
+      <span class="nav-badge">新</span>
+    </div>
+
+    <div class="nav-item" onclick="switchSection('prompt-newproject', this)">
+      <span class="nav-icon">🏗️</span>
+      <span class="nav-label">新项目搭建模板</span>
+      <span class="nav-badge">新</span>
+    </div>
+
+    <div class="nav-item" onclick="switchSection('prompt-debug', this)">
+      <span class="nav-icon">🐞</span>
+      <span class="nav-label">Bug 调试专项模板</span>
+      <span class="nav-badge">新</span>
+    </div>
+
+    <div class="nav-item" onclick="switchSection('prompt-library', this)">
+      <span class="nav-icon">📚</span>
+      <span class="nav-label">提示词模板速查库</span>
+      <span class="nav-badge">新</span>
+    </div>
+
+    <div class="nav-item" onclick="switchSection('context', this)">
+      <span class="nav-icon">🧠</span>
+      <span class="nav-label">Context 管理策略</span>
+    </div>
+
+    <div class="nav-section-title">工程实践</div>
+
+    <div class="nav-item" onclick="switchSection('workflow', this)">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">工作流设计</span>
+    </div>
+
+    <div class="nav-item" onclick="switchSection('testing', this)">
+      <span class="nav-icon">🧪</span>
+      <span class="nav-label">测试与质量保障</span>
+    </div>
+
+    <div class="nav-item" onclick="switchSection('project-init', this)">
+      <span class="nav-icon">🚀</span>
+      <span class="nav-label">项目初始化最佳实践</span>
+    </div>
+
+    <div class="nav-section-title">避坑指南</div>
+
+    <div class="nav-item" onclick="switchSection('pitfalls', this)">
+      <span class="nav-icon">⚠️</span>
+      <span class="nav-label">常见坑点汇总</span>
+    </div>
+
+    <div class="nav-item" onclick="switchSection('security', this)">
+      <span class="nav-icon">🔒</span>
+      <span class="nav-label">安全与权限控制</span>
+    </div>
+
+    <div class="nav-section-title">高级技巧</div>
+
+    <div class="nav-item" onclick="switchSection('mcp', this)">
+      <span class="nav-icon">🔌</span>
+      <span class="nav-label">MCP 工具集成</span>
+    </div>
+
+    <div class="nav-item" onclick="switchSection('performance', this)">
+      <span class="nav-icon">📈</span>
+      <span class="nav-label">效率提升 Tricks</span>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    共 16 个主题 · 持续更新中
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- ========== OVERVIEW ========== -->
+  <section class="content-section active" id="section-overview">
+    <div class="section-hero">
+      <div class="hero-icon">🏠</div>
+      <div class="hero-text">
+        <h2>总览与入门</h2>
+        <p>本手册汇总了 Claude Code 多人协同开发、提示词工程、工作流设计等方面的实战经验，帮助你少走弯路、高效落地 AI 辅助开发。</p>
+        <span class="tag" style="background:rgba(124,106,247,0.15);color:#a5b4fc">2025 更新</span>
+        <span class="tag" style="background:rgba(94,234,212,0.15);color:#5eead4">实战向</span>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num">16</div>
+        <div class="stat-label">经验主题</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">100+</div>
+        <div class="stat-label">实用技巧</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">20+</div>
+        <div class="stat-label">避坑提示</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">∞</div>
+        <div class="stat-label">效率提升</div>
+      </div>
+    </div>
+
+    <div class="section-subtitle">核心理念</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header">
+          <span class="card-icon">💡</span>
+          <span class="card-title">把 Claude Code 当成高级实习生，而非魔法</span>
+          <span class="card-badge badge-tip">理念</span>
+        </div>
+        <div class="card-body">
+          <p>Claude Code 能完成大量重复性、结构化的工作，但需要你提供清晰的上下文、明确的目标和适时的纠错。给它写清楚需求文档，而不是"帮我做个电商网站"。</p>
+          <ul class="tips-list">
+            <li data-icon="✅">提供足够背景：项目技术栈、代码规范、业务逻辑</li>
+            <li data-icon="✅">分解任务：复杂功能拆成小步骤，逐步验证</li>
+            <li data-icon="✅">保持对话连续性：不要频繁新建对话，保留上下文</li>
+            <li data-icon="❌">不要一次性提过长需求，容易跑偏</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header">
+          <span class="card-icon">🗂️</span>
+          <span class="card-title">CLAUDE.md 是你最重要的配置文件</span>
+          <span class="card-badge badge-good">必做</span>
+        </div>
+        <div class="card-body">
+          <p>在项目根目录创建 <code style="background:#0d1117;padding:2px 6px;border-radius:4px;font-size:12px">CLAUDE.md</code> 文件，Claude Code 每次启动都会读取它。把项目规范、架构说明、禁止操作写在里面。</p>
+          <div class="code-block">
+            <span class="code-lang">CLAUDE.md</span>
+            <span class="comment"># 项目规范</span><br>
+            - 使用 TypeScript，禁止 any<br>
+            - 组件使用 Tailwind CSS，禁用 inline style<br>
+            - 提交前必须运行 <span class="func">pnpm test</span><br>
+            - API 路由统一放 <span class="string">/src/api</span> 目录<br>
+            <span class="comment"># 禁止操作</span><br>
+            - 不得修改 <span class="string">migrations/</span> 目录<br>
+            - 不得删除环境变量文件
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      💡 <strong>快速上手建议：</strong> 新人先看「新项目搭建模板」快速落地；接手历史项目看「历史项目改造模板」；遇到 Bug 直接翻「Bug 调试专项模板」；日常开发常备「提示词模板速查库」。
+    </div>
+  </section>
+
+  <!-- ========== GIT PR ========== -->
+  <section class="content-section" id="section-git-pr">
+    <div class="section-hero">
+      <div class="hero-icon">🔀</div>
+      <div class="hero-text">
+        <h2>Git PR 自动化管理</h2>
+        <p>让 Claude Code 自动创建分支、提交代码、生成 PR 描述，并处理 review 意见，大幅降低多人协同的沟通成本。</p>
+      </div>
+    </div>
+
+    <div class="section-subtitle">标准工作流</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent:#5eead4">
+        <div class="card-header">
+          <span class="card-icon">🌿</span>
+          <span class="card-title">让 AI 自动创建规范分支并提交</span>
+          <span class="card-badge badge-good">推荐流程</span>
+        </div>
+        <div class="card-body">
+          <p>在 CLAUDE.md 中定义分支命名规范，然后每次给 Claude Code 任务时，附上"<strong>完成后创建 PR</strong>"的指令。</p>
+          <div class="code-block">
+            <span class="code-lang">Prompt 示例</span>
+            <span class="comment"># 给 Claude Code 的完整任务指令</span><br>
+            实现用户登录功能（JWT 认证）。<br><br>
+            完成后请：<br>
+            1. 创建分支 <span class="string">feat/user-login</span><br>
+            2. 原子化提交（feat/fix/chore 前缀）<br>
+            3. 用 <span class="func">gh pr create</span> 创建 PR<br>
+            4. PR 描述包含：改动摘要、测试方法、截图
+          </div>
+          <ul class="tips-list">
+            <li data-icon="📌">分支命名统一：<code style="font-size:12px">feat/</code> <code style="font-size:12px">fix/</code> <code style="font-size:12px">chore/</code> 前缀，避免混乱</li>
+            <li data-icon="📌">使用 GitHub CLI (<code style="font-size:12px">gh</code>) 工具，Claude Code 可直接调用</li>
+            <li data-icon="📌">PR 模板放在 <code style="font-size:12px">.github/pull_request_template.md</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent3)">
+        <div class="card-header">
+          <span class="card-icon">📝</span>
+          <span class="card-title">自动生成高质量 PR 描述</span>
+          <span class="card-badge badge-tip">提效</span>
+        </div>
+        <div class="card-body">
+          <p>让 Claude Code 在创建 PR 时，自动 diff 分析变更并生成结构化描述，让 reviewer 一眼看懂改了什么。</p>
+          <div class="code-block">
+            <span class="code-lang">Prompt</span>
+            分析 <span class="func">git diff main</span> 的所有变更，<br>
+            用以下格式生成 PR 描述：<br><br>
+            <span class="keyword">## 改动摘要</span><br>
+            <span class="keyword">## 核心变更文件</span><br>
+            <span class="keyword">## 如何测试</span><br>
+            <span class="keyword">## Breaking Changes（如有）</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent4)">
+        <div class="card-header">
+          <span class="card-icon">🔍</span>
+          <span class="card-title">自动处理 Code Review 意见</span>
+          <span class="card-badge badge-warn">注意</span>
+        </div>
+        <div class="card-body">
+          <p>将 reviewer 的评论粘贴给 Claude Code，让它逐条修复并回复评论，但要注意让 AI 解释修改原因，不要盲目应用。</p>
+          <div class="code-block">
+            <span class="code-lang">Prompt</span>
+            以下是 PR review 意见，请逐条处理：<br>
+            <span class="string">[粘贴 review 评论]</span><br><br>
+            要求：<br>
+            - 每条意见单独一次 commit<br>
+            - 说明为什么这样修改<br>
+            - 不确定的意见请标出，不要擅自改
+          </div>
+          <div class="highlight-box warn">
+            ⚠️ AI 有时会"过度修复"——它可能改了 reviewer 没有提到的地方。每次 review 处理后务必执行 git diff 检查。
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent5)">
+        <div class="card-header">
+          <span class="card-icon">🤝</span>
+          <span class="card-title">多人协同 PR 合并策略</span>
+          <span class="card-badge badge-good">团队</span>
+        </div>
+        <div class="card-body">
+          <ul class="tips-list">
+            <li data-icon="🔒">设置 Branch Protection：main 分支要求 PR + CI 通过</li>
+            <li data-icon="🔄">每个 AI 任务独立分支，避免多 agent 写同一文件</li>
+            <li data-icon="📋">用 GitHub Projects 看板管理 AI 正在处理的任务</li>
+            <li data-icon="⏰">建议每天 rebase 同步 main，减少合并冲突</li>
+            <li data-icon="🤖">可以让 Claude Code 在 PR 合并前自动运行 lint + test</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== MULTI AGENT ========== -->
+  <section class="content-section" id="section-multi-agent">
+    <div class="section-hero">
+      <div class="hero-icon">🤖</div>
+      <div class="hero-text">
+        <h2>多 Agent 并行协作</h2>
+        <p>同时开启多个 Claude Code 实例处理不同任务，实现真正的并行开发——需要合理划分任务边界。</p>
+      </div>
+    </div>
+
+    <div class="section-subtitle">并行策略</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header">
+          <span class="card-icon">✂️</span>
+          <span class="card-title">任务划分原则：文件级隔离</span>
+          <span class="card-badge badge-good">核心原则</span>
+        </div>
+        <div class="card-body">
+          <p>多个 Agent 并行时，最重要的原则是<strong>每个 Agent 操作不同的文件/目录</strong>，否则会产生 git 冲突甚至相互覆盖。</p>
+          <div class="two-col">
+            <div class="card" style="--card-accent: var(--accent5); padding: 14px 16px;">
+              <div style="font-size:12px;font-weight:600;color:#34d399;margin-bottom:8px">✅ 好的任务拆分</div>
+              <div style="font-size:12px;color:#b8c4d6;line-height:1.7">
+                Agent A → 前端页面 /src/pages<br>
+                Agent B → API 接口 /src/api<br>
+                Agent C → 数据库 /src/db<br>
+                Agent D → 写测试 /tests
+              </div>
+            </div>
+            <div class="card" style="--card-accent: var(--accent4); padding: 14px 16px;">
+              <div style="font-size:12px;font-weight:600;color:#f472b6;margin-bottom:8px">❌ 危险的任务拆分</div>
+              <div style="font-size:12px;color:#b8c4d6;line-height:1.7">
+                Agent A → 修改 utils.ts<br>
+                Agent B → 也修改 utils.ts<br>
+                Agent C → 修改 main.ts<br>
+                Agent D → 也修改 main.ts
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header">
+          <span class="card-icon">🎭</span>
+          <span class="card-title">角色分工模式</span>
+          <span class="card-badge badge-tip">推荐</span>
+        </div>
+        <div class="card-body">
+          <p>给每个 Agent 设定明确角色，通过不同的 CLAUDE.md 或 系统 Prompt 约束其行为范围。</p>
+          <ul class="tips-list">
+            <li data-icon="🎨">前端 Agent：只操作 /src/components、/src/pages</li>
+            <li data-icon="⚙️">后端 Agent：只操作 /src/api、/src/services</li>
+            <li data-icon="🧪">测试 Agent：只写/改 /tests 目录，不动源码</li>
+            <li data-icon="📚">文档 Agent：只更新 docs/ 和注释</li>
+            <li data-icon="🔧">DevOps Agent：只碰 CI/CD、Dockerfile 等配置</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent3)">
+        <div class="card-header">
+          <span class="card-icon">📡</span>
+          <span class="card-title">Agent 间通信：通过文件传递状态</span>
+          <span class="card-badge badge-warn">技巧</span>
+        </div>
+        <div class="card-body">
+          <p>多个 Agent 之间没有直接通信能力，但可以通过共享文件（如 <code style="font-size:12px">TODO.md</code>、接口定义文件）来协调。</p>
+          <div class="code-block">
+            <span class="code-lang">协作流程</span>
+            <span class="comment"># 1. 先让架构 Agent 生成接口定义</span><br>
+            <span class="func">api-contract.ts</span> → 所有 API 类型定义<br><br>
+            <span class="comment"># 2. 前端 Agent 依照接口 mock 数据开发</span><br>
+            <span class="comment"># 3. 后端 Agent 实现接口</span><br>
+            <span class="comment"># 4. 最后整合测试</span><br><br>
+            <span class="string"># 关键：接口文件由专人（人工）维护</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CONFLICT ========== -->
+  <section class="content-section" id="section-conflict">
+    <div class="section-hero">
+      <div class="hero-icon">⚔️</div>
+      <div class="hero-text">
+        <h2>冲突处理与代码合并</h2>
+        <p>多人 + 多 AI 协作时，代码冲突是家常便饭。让 Claude Code 帮你分析和解决冲突，但要注意人工最终校验。</p>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent4)">
+        <div class="card-header">
+          <span class="card-icon">🩺</span>
+          <span class="card-title">让 AI 分析冲突并给出解决方案</span>
+          <span class="card-badge badge-tip">实用</span>
+        </div>
+        <div class="card-body">
+          <p>遇到 merge conflict 时，将冲突内容贴给 Claude Code，让它分析两端的意图并给出合并建议。</p>
+          <div class="code-block">
+            <span class="code-lang">Prompt</span>
+            以下是 merge conflict 内容：<br>
+            <span class="string">[粘贴 <<<< ==== >>>> 冲突块]</span><br><br>
+            请分析：<br>
+            1. HEAD 端改了什么，意图是什么<br>
+            2. incoming 端改了什么，意图是什么<br>
+            3. 如果两个都要保留，给出合并后的代码<br>
+            4. 如果有业务逻辑冲突，标出需要人工决策的地方
+          </div>
+          <div class="highlight-box warn">
+            ⚠️ 业务逻辑冲突（如两种不同的折扣计算方式）必须由人来决策，不要让 AI 自己选择。
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent5)">
+        <div class="card-header">
+          <span class="card-icon">🛡️</span>
+          <span class="card-title">预防冲突的最佳实践</span>
+          <span class="card-badge badge-good">预防</span>
+        </div>
+        <div class="card-body">
+          <ul class="tips-list">
+            <li data-icon="📅">每天开始工作前先 git pull --rebase，同步最新代码</li>
+            <li data-icon="🎯">每个 PR 保持小而聚焦，不要大而全的功能 PR</li>
+            <li data-icon="🏗️">提前约定共享文件的修改规则（如 config、types）</li>
+            <li data-icon="🔢">接口定义文件用版本号管理，避免直接修改</li>
+            <li data-icon="⏱️">长时间未合并的分支是最大冲突源，尽量缩短 PR 生命周期</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PROMPT ========== -->
+  <section class="content-section" id="section-prompt">
+    <div class="section-hero">
+      <div class="hero-icon">✍️</div>
+      <div class="hero-text">
+        <h2>核心 Prompt 技巧</h2>
+        <p>同样的任务，不同的 prompt 写法可能导致截然不同的结果。掌握这些基础技巧，再结合下方专项模板，让 Claude Code 理解你真正想要什么。</p>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header">
+          <span class="card-icon">📋</span>
+          <span class="card-title">结构化任务 Prompt 模板</span>
+          <span class="card-badge badge-good">必学</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">万能模板</span>
+            <span class="keyword">【背景】</span> 我们是 B2B SaaS，使用 Next.js 14 + Prisma<br><br>
+            <span class="keyword">【任务】</span> 实现订单列表页面，支持分页和状态筛选<br><br>
+            <span class="keyword">【约束】</span><br>
+            - 使用已有的 <span class="func">OrderCard</span> 组件<br>
+            - API 路由遵循现有 <span class="string">/api/v1/</span> 规范<br>
+            - 不要修改 Prisma schema<br><br>
+            <span class="keyword">【完成标准】</span><br>
+            - 分页正常工作<br>
+            - 筛选条件可以组合<br>
+            - 有 loading 和 empty state
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header">
+          <span class="card-icon">🔁</span>
+          <span class="card-title">迭代优化而非一次到位</span>
+          <span class="card-badge badge-tip">策略</span>
+        </div>
+        <div class="card-body">
+          <p>不要期望一个 prompt 产出完美代码，采用"实现→检视→优化"的迭代模式更高效。</p>
+          <ul class="tips-list">
+            <li data-icon="1️⃣">第一轮：让 AI 给出方案骨架，先不写实现</li>
+            <li data-icon="2️⃣">确认方案后，再让 AI 实现核心逻辑</li>
+            <li data-icon="3️⃣">运行测试/看效果，把问题描述给 AI 修复</li>
+            <li data-icon="4️⃣">最后让 AI 做代码审查和优化建议</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent3)">
+        <div class="card-header">
+          <span class="card-icon">🎯</span>
+          <span class="card-title">用示例代替描述</span>
+          <span class="card-badge badge-tip">黄金技巧</span>
+        </div>
+        <div class="card-body">
+          <p>与其花大量文字描述代码风格，不如直接给出 1-2 个已有文件作为示例，让 AI 学习并保持一致。</p>
+          <div class="code-block">
+            <span class="code-lang">Prompt</span>
+            参考 <span class="string">src/components/UserCard.tsx</span> 的代码风格，<br>
+            实现一个类似的 <span class="func">ProductCard.tsx</span> 组件。<br>
+            需要展示：产品图、名称、价格、库存状态。
+          </div>
+          <div class="highlight-box success">
+            ✅ 这比写"使用函数式组件，用 tailwind，要有 TypeScript 类型…"效果好 10 倍。
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent4)">
+        <div class="card-header">
+          <span class="card-icon">🚫</span>
+          <span class="card-title">明确说"不要做什么"</span>
+          <span class="card-badge badge-warn">避坑</span>
+        </div>
+        <div class="card-body">
+          <ul class="tips-list">
+            <li data-icon="❌">不要安装新的 npm 包（除非我明确同意）</li>
+            <li data-icon="❌">不要修改测试文件，只修改源码</li>
+            <li data-icon="❌">不要重构现有功能，只实现新功能</li>
+            <li data-icon="❌">不要修改数据库结构</li>
+            <li data-icon="❌">不要删除任何已有代码（可以注释掉）</li>
+          </ul>
+          <p style="margin-top:12px;font-size:13px;color:var(--text-muted)">把这些"禁令"写进 CLAUDE.md，一劳永逸。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PROMPT: LEGACY PROJECT ========== -->
+  <section class="content-section" id="section-prompt-legacy">
+    <div class="section-hero">
+      <div class="hero-icon">🏚️</div>
+      <div class="hero-text">
+        <h2>历史项目改造模板</h2>
+        <p>接手老项目、在已有代码库上新增功能、重构遗留代码——这些场景需要 AI 先"读懂"项目再动手，否则很容易破坏现有逻辑。</p>
+        <span class="tag" style="background:rgba(251,146,60,0.15);color:#fb923c">改造/重构</span>
+        <span class="tag" style="background:rgba(124,106,247,0.15);color:#a5b4fc">历史项目</span>
+      </div>
+    </div>
+
+    <div class="section-subtitle">第一步：项目摸底</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent3)">
+        <div class="card-header">
+          <span class="card-icon">🔍</span>
+          <span class="card-title">模板 1 · 接手项目快速摸底</span>
+          <span class="card-badge badge-warn">第一步必做</span>
+        </div>
+        <div class="card-body">
+          <p>接手任何历史项目，第一件事是让 AI 帮你梳理全貌，而不是盲目开始改代码。</p>
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 项目摸底模板</span>
+            请帮我分析这个项目，我刚接手，需要快速了解全貌。<br><br>
+            <span class="keyword">请依次完成：</span><br>
+            1. 读取 package.json（或 requirements.txt / go.mod），<br>
+            &nbsp;&nbsp;&nbsp;列出核心依赖和版本，标出过时的包<br>
+            2. 分析目录结构，画出模块关系图（文字版）<br>
+            3. 找出项目入口文件，描述主要数据流<br>
+            4. 列出所有 TODO/FIXME/HACK 注释，按数量排序<br>
+            5. 统计哪些文件代码量最大（可能是核心或问题文件）<br>
+            6. 检查是否有未使用的依赖或死代码<br><br>
+            <span class="keyword">输出格式：</span><br>
+            - 用 Markdown 表格整理依赖状态<br>
+            - 给出"需要立即关注"的 Top 3 风险点
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header">
+          <span class="card-icon">🗺️</span>
+          <span class="card-title">模板 2 · 理解特定模块逻辑</span>
+          <span class="card-badge badge-tip">读懂再改</span>
+        </div>
+        <div class="card-body">
+          <p>在修改某个模块之前，先让 AI 解释清楚它的工作原理，确认理解正确后再动手。</p>
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 模块理解模板</span>
+            我需要修改 <span class="string">[文件路径或模块名]</span>，<br>
+            但先不要做任何改动，请帮我理解它：<br><br>
+            1. 这个模块的职责是什么？解决什么问题？<br>
+            2. 它被哪些地方调用？（找出所有 import/require）<br>
+            3. 它依赖了哪些外部状态或副作用？<br>
+            4. 有哪些边界情况或特殊处理需要注意？<br>
+            5. 如果我要改 <span class="string">[具体功能]</span>，<br>
+            &nbsp;&nbsp;&nbsp;哪些地方会受到影响？<br><br>
+            <span class="comment"># 理解确认后，再发下一条消息让它改</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-subtitle">第二步：安全改造</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header">
+          <span class="card-icon">➕</span>
+          <span class="card-title">模板 3 · 在历史项目中新增功能</span>
+          <span class="card-badge badge-good">最常用</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 新增功能模板</span>
+            <span class="keyword">【项目背景】</span><br>
+            这是一个 <span class="string">[技术栈]</span> 项目，已运行 <span class="string">[X]</span> 年，<br>
+            代码风格参考 <span class="func">[示例文件路径]</span><br><br>
+            <span class="keyword">【新增功能】</span><br>
+            需要新增：<span class="string">[功能描述]</span><br><br>
+            <span class="keyword">【硬性约束】</span><br>
+            ❌ 不得修改以下文件（生产稳定）：<br>
+            &nbsp;&nbsp;&nbsp;<span class="string">[列出不能动的文件]</span><br>
+            ❌ 不得修改数据库结构<br>
+            ❌ 不得升级任何依赖版本<br>
+            ✅ 新增代码风格与现有保持一致<br>
+            ✅ 有单元测试覆盖核心逻辑<br><br>
+            <span class="keyword">【完成前请自查】</span><br>
+            - 运行现有测试套件，确保没有回归<br>
+            - 列出你修改了哪些已有文件及原因
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent4)">
+        <div class="card-header">
+          <span class="card-icon">🔄</span>
+          <span class="card-title">模板 4 · 局部重构（不改行为）</span>
+          <span class="card-badge badge-warn">谨慎操作</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 安全重构模板</span>
+            请重构 <span class="func">[文件/函数名]</span>，<br>
+            <span class="keyword">目标：</span>提升可读性 / 减少重复代码 / 优化性能<br><br>
+            <span class="keyword">黄金规则（必须遵守）：</span><br>
+            1. 外部接口（函数签名、返回值结构）不变<br>
+            2. 所有现有测试必须继续通过<br>
+            3. 不引入新的依赖<br>
+            4. 每次只重构一个小单元，不要大面积改动<br><br>
+            <span class="keyword">重构完成后：</span><br>
+            - 用 diff 形式展示改动<br>
+            - 解释每处改动的理由<br>
+            - 标出任何你不确定的地方（需人工确认）<br><br>
+            <span class="comment"># ⚠️ 如遇业务逻辑不确定，停下来问我，不要自己猜</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent5)">
+        <div class="card-header">
+          <span class="card-icon">📦</span>
+          <span class="card-title">模板 5 · 依赖升级与迁移</span>
+          <span class="card-badge badge-warn">高风险</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 依赖迁移模板</span>
+            需要将 <span class="string">[旧依赖@版本]</span> 升级到 <span class="string">[新版本]</span><br>
+            或迁移到 <span class="string">[替代库]</span>。<br><br>
+            <span class="keyword">请先（不要改代码）：</span><br>
+            1. 列出 Breaking Changes（查 changelog）<br>
+            2. 找出项目中所有使用该库的地方<br>
+            3. 评估改动工作量（小/中/大）<br>
+            4. 给出迁移建议和顺序<br><br>
+            <span class="keyword">我确认后再执行：</span><br>
+            - 按文件逐个迁移，每个文件一次 commit<br>
+            - 每次迁移后运行相关测试<br>
+            - 遇到无法自动迁移的地方标出，由我处理
+          </div>
+          <div class="highlight-box warn">
+            ⚠️ 跨大版本升级（如 React 17→18）必须人工参与决策，不能全交给 AI。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PROMPT: NEW PROJECT ========== -->
+  <section class="content-section" id="section-prompt-newproject">
+    <div class="section-hero">
+      <div class="hero-icon">🏗️</div>
+      <div class="hero-text">
+        <h2>新项目搭建模板</h2>
+        <p>从零开始的新项目是 Claude Code 最擅长的场景，但需要在最开始就定好规范，否则越往后越难纠偏。</p>
+        <span class="tag" style="background:rgba(52,211,153,0.15);color:#34d399">新项目</span>
+        <span class="tag" style="background:rgba(124,106,247,0.15);color:#a5b4fc">从零开始</span>
+      </div>
+    </div>
+
+    <div class="section-subtitle">项目初始化</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent5)">
+        <div class="card-header">
+          <span class="card-icon">🎯</span>
+          <span class="card-title">模板 1 · 新项目启动 PRD（产品需求文档）</span>
+          <span class="card-badge badge-good">第一步</span>
+        </div>
+        <div class="card-body">
+          <p>在让 AI 写任何代码之前，先让它帮你把需求文档化，避免后期大返工。</p>
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 新项目启动模板</span>
+            我要从零搭建一个新项目，先帮我梳理，<span class="keyword">不要写任何代码</span>。<br><br>
+            <span class="keyword">项目描述：</span><br>
+            <span class="string">[用 2-3 句话描述你的项目是做什么的]</span><br><br>
+            <span class="keyword">请帮我完成：</span><br>
+            1. 推荐技术栈，并说明理由<br>
+            &nbsp;&nbsp;&nbsp;（考虑：团队熟悉度、生态成熟度、长期维护成本）<br>
+            2. 设计项目目录结构（Monorepo 还是单体？）<br>
+            3. 列出第一阶段需要的核心功能模块<br>
+            4. 识别技术难点和需要提前调研的点<br>
+            5. 给出 Week 1 的开发任务拆解<br><br>
+            <span class="keyword">我的约束：</span><br>
+            - 团队规模：<span class="string">[N]</span> 人<br>
+            - 上线时间：<span class="string">[X]</span> 周内<br>
+            - 必须使用：<span class="string">[已定的技术或平台]</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header">
+          <span class="card-icon">🏗️</span>
+          <span class="card-title">模板 2 · 项目脚手架搭建</span>
+          <span class="card-badge badge-good">一次性用</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 脚手架搭建模板</span>
+            帮我初始化一个 <span class="string">[技术栈]</span> 项目，包含完整工程配置。<br><br>
+            <span class="keyword">技术要求：</span><br>
+            - 语言：<span class="string">TypeScript（strict 模式）</span><br>
+            - 包管理：<span class="string">pnpm</span><br>
+            - 代码规范：<span class="string">ESLint + Prettier</span>（推荐配置）<br>
+            - Git Hook：<span class="string">husky + lint-staged</span>（提交前自动检查）<br>
+            - 测试：<span class="string">Vitest + Testing Library</span><br>
+            - CI：<span class="string">GitHub Actions</span>（push 时自动跑测试）<br><br>
+            <span class="keyword">完成后：</span><br>
+            1. 生成 CLAUDE.md，写入本项目的开发规范<br>
+            2. 生成 .github/pull_request_template.md<br>
+            3. 创建 README.md，包含本地启动步骤<br>
+            4. 确认 <span class="func">pnpm dev</span> 可以正常启动
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-subtitle">核心模块搭建</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header">
+          <span class="card-icon">🔐</span>
+          <span class="card-title">模板 3 · 用户认证系统搭建</span>
+          <span class="card-badge badge-tip">高频场景</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 认证系统模板</span>
+            搭建完整的用户认证系统，技术栈：<span class="string">[你的栈]</span><br><br>
+            <span class="keyword">需要包含：</span><br>
+            - 注册 / 登录 / 登出 / 刷新 Token<br>
+            - JWT（access token 15min，refresh token 7天）<br>
+            - 密码加密（bcrypt，salt rounds=12）<br>
+            - 登录失败次数限制（5次锁定 15min）<br>
+            - 中间件：路由鉴权 + 角色权限<br><br>
+            <span class="keyword">安全要求：</span><br>
+            - Token 存 httpOnly Cookie，不存 localStorage<br>
+            - 所有接口有请求速率限制<br>
+            - SQL 注入防护（Prisma/ORM 已覆盖的可以说明）<br><br>
+            <span class="keyword">测试要求：</span><br>
+            为每个认证流程写集成测试，覆盖正常和异常路径
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent3)">
+        <div class="card-header">
+          <span class="card-icon">🗄️</span>
+          <span class="card-title">模板 4 · 数据库 Schema 设计</span>
+          <span class="card-badge badge-tip">高频场景</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">复制即用 · DB Schema 设计模板</span>
+            帮我设计数据库 Schema，<span class="keyword">先不写代码</span>，<br>
+            只给出 ER 图（文字版）和字段说明。<br><br>
+            <span class="keyword">业务描述：</span><br>
+            <span class="string">[描述你的业务实体和关系，比如：</span><br>
+            <span class="string">"用户可以创建多个项目，项目有多个任务，</span><br>
+            <span class="string">&nbsp;任务可以分配给团队成员，任务有评论"]</span><br><br>
+            <span class="keyword">请包含：</span><br>
+            - 每张表的核心字段和数据类型<br>
+            - 表关系（一对多 / 多对多）<br>
+            - 需要建索引的字段（查询频繁的）<br>
+            - 软删除 vs 硬删除的建议<br>
+            - 需要记录操作日志的表<br><br>
+            <span class="comment"># 确认设计后，再让 AI 生成 Prisma schema 或 SQL</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent4)">
+        <div class="card-header">
+          <span class="card-icon">🌐</span>
+          <span class="card-title">模板 5 · RESTful API 规范化搭建</span>
+          <span class="card-badge badge-tip">后端通用</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">复制即用 · API 规范模板</span>
+            搭建标准化的 RESTful API 基础架构。<br><br>
+            <span class="keyword">要求：</span><br>
+            - 统一响应格式：<br>
+            &nbsp;&nbsp;<span class="func">{ code, message, data, timestamp }</span><br>
+            - 统一错误处理中间件（捕获所有未处理异常）<br>
+            - 请求参数校验（Zod / Joi）<br>
+            - API 文档自动生成（Swagger/OpenAPI）<br>
+            - 请求日志（记录：path、method、status、耗时）<br>
+            - 分页规范：<span class="func">?page=1&pageSize=20</span><br><br>
+            <span class="keyword">先生成：</span><br>
+            1. 基础路由结构示例（CRUD for User）<br>
+            2. 错误码枚举定义<br>
+            3. API 设计规范文档（写入 ARCHITECTURE.md）
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent5)">
+        <div class="card-header">
+          <span class="card-icon">🎨</span>
+          <span class="card-title">模板 6 · 前端组件库初始化</span>
+          <span class="card-badge badge-tip">前端通用</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 前端架构模板</span>
+            搭建前端项目基础架构，技术栈：<span class="string">[React/Vue + Tailwind]</span><br><br>
+            <span class="keyword">需要建立：</span><br>
+            1. 设计系统基础：<br>
+            &nbsp;&nbsp;&nbsp;- 颜色变量（primary/secondary/danger/warning）<br>
+            &nbsp;&nbsp;&nbsp;- 字体大小规范<br>
+            &nbsp;&nbsp;&nbsp;- 间距规范（4px 基准）<br>
+            2. 基础组件（每个组件需有 TypeScript 类型）：<br>
+            &nbsp;&nbsp;&nbsp;Button / Input / Modal / Toast / Loading<br>
+            3. 全局状态管理方案（Zustand/Pinia）<br>
+            4. API 请求封装（axios 拦截器 + 错误统一处理）<br>
+            5. 路由权限控制（需登录的路由自动重定向）<br><br>
+            <span class="keyword">规范：</span>组件文件结构参考 Atomic Design 原则
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PROMPT: DEBUG ========== -->
+  <section class="content-section" id="section-prompt-debug">
+    <div class="section-hero">
+      <div class="hero-icon">🐞</div>
+      <div class="hero-text">
+        <h2>Bug 调试专项模板</h2>
+        <p>调试是 Claude Code 最考验 Prompt 质量的场景——给的信息越精准，AI 定位越准确。掌握这些模板，告别"AI 乱猜"。</p>
+        <span class="tag" style="background:rgba(244,114,182,0.15);color:#f472b6">调试</span>
+        <span class="tag" style="background:rgba(251,146,60,0.15);color:#fb923c">排错</span>
+      </div>
+    </div>
+
+    <div class="section-subtitle">通用调试流程</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent4)">
+        <div class="card-header">
+          <span class="card-icon">🩺</span>
+          <span class="card-title">模板 1 · 万能 Bug 报告模板</span>
+          <span class="card-badge badge-danger">最重要</span>
+        </div>
+        <div class="card-body">
+          <p>遇到任何 Bug，先用这个模板组织信息，然后给 AI，而不是直接说"我的代码出错了"。</p>
+          <div class="code-block">
+            <span class="code-lang">复制即用 · Bug 报告模板</span>
+            <span class="keyword">【Bug 描述】</span><br>
+            <span class="string">[一句话描述问题现象]</span><br><br>
+            <span class="keyword">【错误信息】（完整粘贴，不要省略）</span><br>
+            <span class="string">```</span><br>
+            <span class="string">[错误堆栈 / 控制台报错 / 网络请求报错]</span><br>
+            <span class="string">```</span><br><br>
+            <span class="keyword">【复现步骤】</span><br>
+            1. 进入 <span class="string">[页面/功能]</span><br>
+            2. 执行 <span class="string">[操作]</span><br>
+            3. 看到 <span class="string">[错误现象]</span><br><br>
+            <span class="keyword">【期望行为】</span><br>
+            应该 <span class="string">[正确结果]</span><br><br>
+            <span class="keyword">【相关文件】</span><br>
+            <span class="string">[粘贴最相关的 2-3 个文件内容]</span><br><br>
+            <span class="keyword">【已尝试过的方法】</span><br>
+            <span class="string">[列出已试过的解决方案，避免 AI 重复建议]</span><br><br>
+            <span class="comment"># 请先分析根本原因，不要直接改代码</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header">
+          <span class="card-icon">🔬</span>
+          <span class="card-title">模板 2 · 引导 AI 做根因分析</span>
+          <span class="card-badge badge-tip">避免乱猜</span>
+        </div>
+        <div class="card-body">
+          <p>直接问"怎么修复"会让 AI 猜测性地给出方案。先让它做假设推理，确认后再修复。</p>
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 根因分析模板</span>
+            在修复之前，请先做根因分析：<br><br>
+            1. 列出可能导致这个问题的<span class="keyword"> 3-5 个假设</span>，<br>
+            &nbsp;&nbsp;&nbsp;按可能性从高到低排序<br>
+            2. 对每个假设，说明：<br>
+            &nbsp;&nbsp;&nbsp;- 如果是这个原因，应该还会有什么表现？<br>
+            &nbsp;&nbsp;&nbsp;- 怎么快速验证这个假设（不改代码，只加 log）？<br>
+            3. 给出你认为最可能的根本原因<br><br>
+            <span class="comment"># 等我确认假设后，再给修复方案</span><br>
+            <span class="comment"># 如果假设需要我提供更多信息，直接告诉我</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-subtitle">专项场景调试</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent3)">
+        <div class="card-header">
+          <span class="card-icon">⚡</span>
+          <span class="card-title">模板 3 · 性能问题诊断</span>
+          <span class="card-badge badge-tip">性能优化</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 性能诊断模板</span>
+            <span class="keyword">【性能问题描述】</span><br>
+            <span class="string">[页面加载慢 / 接口响应慢 / 内存泄漏 / CPU 占用高]</span><br><br>
+            <span class="keyword">【量化指标】</span><br>
+            - 当前：<span class="string">[X秒 / XMB / X%]</span><br>
+            - 期望：<span class="string">[目标值]</span><br>
+            - 发生条件：<span class="string">[什么时候触发，数据量多少]</span><br><br>
+            <span class="keyword">请帮我：</span><br>
+            1. 分析代码中可能的性能瓶颈<br>
+            &nbsp;&nbsp;&nbsp;（关注：N+1 查询、重复渲染、同步阻塞、内存泄漏）<br>
+            2. 给出性能分析的方法（profiling 命令）<br>
+            3. 按优先级列出优化方案，每条标明预期收益<br>
+            4. 先优化收益最大的那一项，其他我们再迭代
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header">
+          <span class="card-icon">🌐</span>
+          <span class="card-title">模板 4 · 接口/网络问题排查</span>
+          <span class="card-badge badge-tip">前后端联调</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 接口问题模板</span>
+            <span class="keyword">【接口信息】</span><br>
+            - 请求：<span class="func">POST /api/v1/orders</span><br>
+            - 请求体：<span class="string">[粘贴 request body]</span><br>
+            - 响应：<span class="string">[粘贴 response，包括状态码和 headers]</span><br><br>
+            <span class="keyword">【问题现象】</span><br>
+            <span class="string">[返回了 500 / CORS 错误 / 数据结构不对 / 认证失败]</span><br><br>
+            <span class="keyword">请检查：</span><br>
+            1. 请求参数是否符合后端 schema 定义<br>
+            2. 认证 Token 是否正确传递<br>
+            3. CORS 配置是否包含该域名和 HTTP 方法<br>
+            4. 后端错误日志中对应的异常堆栈<br><br>
+            <span class="comment"># 同时粘贴前端调用代码和后端路由处理代码</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent5)">
+        <div class="card-header">
+          <span class="card-icon">🔄</span>
+          <span class="card-title">模板 5 · 数据异常 / 状态问题</span>
+          <span class="card-badge badge-tip">状态管理</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 数据状态调试模板</span>
+            数据/状态出现了异常，帮我排查。<br><br>
+            <span class="keyword">【现象】</span><br>
+            - 数据应该是：<span class="string">[期望值]</span><br>
+            - 实际是：<span class="string">[实际值]</span><br>
+            - 在什么操作后出现：<span class="string">[用户行为]</span><br><br>
+            <span class="keyword">【相关代码】</span><br>
+            <span class="string">[粘贴数据流相关代码：数据来源、处理、存储、显示]</span><br><br>
+            <span class="keyword">排查重点：</span><br>
+            - 数据在哪个环节被修改了？<br>
+            - 是否有异步竞争导致数据覆盖？<br>
+            - 是否有缓存导致拿到旧数据？<br>
+            - 组件 unmount 后是否仍在修改状态？（内存泄漏）
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header">
+          <span class="card-icon">🎲</span>
+          <span class="card-title">模板 6 · 偶现 Bug 定位（难度最高）</span>
+          <span class="card-badge badge-danger">玄学必备</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 偶现Bug模板</span>
+            这个 Bug <span class="keyword">偶发、无法稳定复现</span>，帮我分析。<br><br>
+            <span class="keyword">【发生频率】</span>约 <span class="string">[X]</span> 次 / 天，<span class="string">[Y]</span>% 概率触发<br>
+            <span class="keyword">【可能触发场景】</span><span class="string">[列出你观察到的规律]</span><br>
+            <span class="keyword">【最近改动】</span>这个 Bug 从 <span class="string">[大约时间]</span> 开始出现<br><br>
+            <span class="keyword">请帮我：</span><br>
+            1. 分析可能的竞态条件（Race Condition）<br>
+            2. 检查异步操作的错误处理是否完整<br>
+            3. 找出没有清理的副作用（定时器、事件监听）<br>
+            4. 建议如何增加日志来捕获复现条件<br>
+            5. 给出让 Bug 更容易复现的方法（便于测试修复）
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header">
+          <span class="card-icon">🔁</span>
+          <span class="card-title">模板 7 · AI 修了又错时的破局</span>
+          <span class="card-badge badge-warn">卡住必看</span>
+        </div>
+        <div class="card-body">
+          <p>当 AI 反复修改同一个 Bug 但无法解决，说明在错误的方向打转，需要换维度重新分析。</p>
+          <div class="code-block">
+            <span class="code-lang">复制即用 · 破局模板</span>
+            我们已经尝试了 <span class="string">[X]</span> 种方案，问题仍未解决。<br>
+            请停下来，<span class="keyword">完全重新思考</span>：<br><br>
+            1. 把我们尝试过的所有方案列出来，<br>
+            &nbsp;&nbsp;&nbsp;分析每次为什么没能解决<br>
+            2. 现在忘掉之前的思路，<br>
+            &nbsp;&nbsp;&nbsp;如果你是第一次看这个问题，<br>
+            &nbsp;&nbsp;&nbsp;会从哪里开始排查？<br>
+            3. 是否可能根本原因不在我们改过的地方？<br>
+            4. 最小化复现：能否写一个最小 demo 来孤立问题？<br><br>
+            <span class="comment"># 有时候"删掉重写"比"修复"更快</span>
+          </div>
+          <div class="highlight-box warn">
+            ⚠️ 如果 AI 已经对同一个 Bug 修改超过 3 次，强烈建议开启新对话，把问题重新描述一遍，避免被旧思路锁死。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PROMPT LIBRARY ========== -->
+  <section class="content-section" id="section-prompt-library">
+    <div class="section-hero">
+      <div class="hero-icon">📚</div>
+      <div class="hero-text">
+        <h2>提示词模板速查库</h2>
+        <p>日常开发中最高频的 Prompt 场景汇总，可以直接复制使用，填入 <code style="background:#1e2535;padding:2px 8px;border-radius:4px;font-size:13px">[括号内容]</code> 即可。</p>
+        <span class="tag" style="background:rgba(94,234,212,0.15);color:#5eead4">即查即用</span>
+      </div>
+    </div>
+
+    <div class="section-subtitle">代码生成</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header"><span class="card-icon">⚙️</span><span class="card-title">通用功能开发 · 五要素模板</span><span class="card-badge badge-good">最万能</span></div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">直接用</span>
+            <span class="keyword">背景：</span><span class="string">[项目技术栈和相关模块简介]</span><br>
+            <span class="keyword">任务：</span>实现 <span class="string">[功能名称]</span><br>
+            <span class="keyword">参考：</span>代码风格参考 <span class="func">[已有文件路径]</span><br>
+            <span class="keyword">约束：</span><span class="string">[不能改的文件/不能引入的依赖/其他限制]</span><br>
+            <span class="keyword">验收：</span><span class="string">[完成的判断标准，越具体越好]</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header"><span class="card-icon">🧩</span><span class="card-title">UI 组件开发</span><span class="card-badge badge-tip">前端</span></div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">直接用</span>
+            开发 <span class="func">[组件名]</span> 组件。<br>
+            参考同目录下 <span class="func">[已有组件]</span> 的写法。<br><br>
+            <span class="keyword">Props 设计：</span><span class="string">[列出需要的 props 和类型]</span><br>
+            <span class="keyword">交互：</span><span class="string">[hover/click/disabled 等状态]</span><br>
+            <span class="keyword">响应式：</span>支持移动端（断点：<span class="string">sm/md/lg</span>）<br>
+            <span class="keyword">无障碍：</span>添加 aria-label 和键盘支持<br><br>
+            完成后写一个 Storybook story 或使用示例。
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent3)">
+        <div class="card-header"><span class="card-icon">🗄️</span><span class="card-title">数据库查询优化</span><span class="card-badge badge-tip">后端</span></div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">直接用</span>
+            优化以下查询，当前执行时间 <span class="string">[X秒]</span>，<br>
+            数据量约 <span class="string">[N]</span> 条记录：<br><br>
+            <span class="string">[粘贴当前 SQL 或 ORM 查询代码]</span><br><br>
+            请：<br>
+            1. 分析慢查询原因（缺少索引？全表扫描？）<br>
+            2. 给出优化后的查询<br>
+            3. 建议需要新建的索引（附建索引的 SQL）<br>
+            4. 预估优化后的性能提升
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-subtitle">代码审查</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent4)">
+        <div class="card-header"><span class="card-icon">🔎</span><span class="card-title">代码 Review 请 AI 自审</span><span class="card-badge badge-good">PR 前必做</span></div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">直接用</span>
+            请以严格的 code reviewer 身份，审查以下代码：<br>
+            <span class="string">[粘贴代码或文件路径]</span><br><br>
+            重点检查：<br>
+            🔴 <span class="keyword">严重</span>：安全漏洞 / 数据丢失风险 / 性能严重问题<br>
+            🟡 <span class="keyword">一般</span>：逻辑错误 / 边界情况未处理 / 可读性差<br>
+            🟢 <span class="keyword">建议</span>：代码优化 / 更好的写法<br><br>
+            对于每个问题：<br>
+            - 指出具体行号<br>
+            - 说明问题原因<br>
+            - 给出修改后的代码
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent5)">
+        <div class="card-header"><span class="card-icon">🛡️</span><span class="card-title">安全性专项检查</span><span class="card-badge badge-danger">上线前</span></div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">直接用</span>
+            对以下代码做安全审查，检查常见漏洞：<br>
+            <span class="string">[粘贴代码]</span><br><br>
+            重点检查：<br>
+            - SQL 注入 / NoSQL 注入<br>
+            - XSS（未转义的用户输入）<br>
+            - CSRF（状态修改接口是否有防护）<br>
+            - 敏感信息泄露（日志、响应体、错误信息）<br>
+            - 越权访问（A 用户能否访问 B 用户的数据）<br>
+            - 不安全的反序列化<br><br>
+            发现问题请给出：CVE 类型 + 修复代码
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-subtitle">文档 & 测试</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header"><span class="card-icon">📝</span><span class="card-title">自动生成函数注释/文档</span><span class="card-badge badge-tip">提效</span></div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">直接用</span>
+            为以下函数/模块生成文档注释：<br>
+            <span class="string">[粘贴代码]</span><br><br>
+            要求：<br>
+            - 格式：JSDoc / TSDoc / Docstring（<span class="string">[选一个]</span>）<br>
+            - 包含：功能描述、参数说明、返回值、异常情况<br>
+            - 对复杂逻辑添加行内注释<br>
+            - 给出 1-2 个使用示例<br>
+            - 语言：中文
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent3)">
+        <div class="card-header"><span class="card-icon">🧪</span><span class="card-title">生成全面的测试用例</span><span class="card-badge badge-tip">测试</span></div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">直接用</span>
+            为以下代码生成测试用例：<br>
+            <span class="string">[粘贴要测试的代码]</span><br><br>
+            测试框架：<span class="string">[Vitest / Jest / pytest]</span><br><br>
+            必须覆盖：<br>
+            ✅ 正常路径（Happy Path）<br>
+            ✅ 边界值（空值、最大值、最小值）<br>
+            ✅ 异常输入（undefined、null、错误类型）<br>
+            ✅ 异步错误处理<br>
+            ✅ 副作用（数据库调用需要 mock）<br><br>
+            目标覆盖率：>= 90%
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header"><span class="card-icon">📊</span><span class="card-title">技术方案对比选型</span><span class="card-badge badge-tip">决策</span></div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">直接用</span>
+            我需要在以下方案中做选择，帮我分析：<br>
+            方案 A：<span class="string">[方案A名称和简述]</span><br>
+            方案 B：<span class="string">[方案B名称和简述]</span><br><br>
+            <span class="keyword">我的项目情况：</span><br>
+            - 规模：<span class="string">[团队人数/数据量/QPS]</span><br>
+            - 现有技术栈：<span class="string">[技术栈]</span><br>
+            - 最重要的指标：<span class="string">[性能/开发效率/维护成本]</span><br><br>
+            请用表格对比，最后给出明确推荐和理由。<br>
+            不要模糊地说"都可以"，要有立场。
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent4)">
+        <div class="card-header"><span class="card-icon">🔧</span><span class="card-title">遗留代码解释/文档化</span><span class="card-badge badge-tip">接手项目</span></div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">直接用</span>
+            这段代码是历史遗留的，没有注释和文档，<br>
+            帮我理解并文档化它：<br>
+            <span class="string">[粘贴代码]</span><br><br>
+            请提供：<br>
+            1. <span class="keyword">一句话总结</span>：这段代码做了什么<br>
+            2. <span class="keyword">逐段解释</span>：每个关键逻辑块的作用<br>
+            3. <span class="keyword">数据流</span>：输入→处理→输出的流程图（文字版）<br>
+            4. <span class="keyword">潜在问题</span>：你发现的坑或需要注意的地方<br>
+            5. <span class="keyword">优化建议</span>：如果要改善，建议优先做哪一点
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-subtitle">高效沟通技巧</div>
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent5)">
+        <div class="card-header"><span class="card-icon">💬</span><span class="card-title">快速指令合集（一行搞定）</span><span class="card-badge badge-good">效率神器</span></div>
+        <div class="card-body">
+          <ul class="tips-list">
+            <li data-icon="⚡"><code style="font-size:12px;background:#0d1117;padding:2px 6px;border-radius:3px">先不要写代码，告诉我你打算怎么做</code> — 让 AI 先说方案再动手</li>
+            <li data-icon="⚡"><code style="font-size:12px;background:#0d1117;padding:2px 6px;border-radius:3px">只修改 [文件名]，其他文件不要动</code> — 精确控制影响范围</li>
+            <li data-icon="⚡"><code style="font-size:12px;background:#0d1117;padding:2px 6px;border-radius:3px">完成后列出你修改了哪些文件</code> — 防止 AI 暗中改东西</li>
+            <li data-icon="⚡"><code style="font-size:12px;background:#0d1117;padding:2px 6px;border-radius:3px">遇到不确定的地方停下来问我</code> — 避免 AI 自己猜测</li>
+            <li data-icon="⚡"><code style="font-size:12px;background:#0d1117;padding:2px 6px;border-radius:3px">给我 3 个方案，各自说明优缺点</code> — 需要选择时用</li>
+            <li data-icon="⚡"><code style="font-size:12px;background:#0d1117;padding:2px 6px;border-radius:3px">用最简单的方式实现，不要过度设计</code> — 防止 AI 写复杂代码</li>
+            <li data-icon="⚡"><code style="font-size:12px;background:#0d1117;padding:2px 6px;border-radius:3px">运行测试，告诉我结果，不要改任何代码</code> — 先看状态再行动</li>
+            <li data-icon="⚡"><code style="font-size:12px;background:#0d1117;padding:2px 6px;border-radius:3px">解释这段代码，像给非技术人员讲一样</code> — 快速理解陌生代码</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CONTEXT ========== -->
+  <section class="content-section" id="section-context">
+    <div class="section-hero">
+      <div class="hero-icon">🧠</div>
+      <div class="hero-text">
+        <h2>Context 管理策略</h2>
+        <p>Claude Code 的上下文窗口有限，合理管理上下文是保持长对话质量的关键。</p>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header">
+          <span class="card-icon">📏</span>
+          <span class="card-title">上下文变长时的信号与应对</span>
+          <span class="card-badge badge-warn">重要</span>
+        </div>
+        <div class="card-body">
+          <p>当对话变长，AI 会开始"忘记"早期信息。识别信号并及时应对：</p>
+          <ul class="tips-list">
+            <li data-icon="🚨">信号：AI 开始重复之前做过的事，或忽略之前确定的约束</li>
+            <li data-icon="🚨">信号：AI 询问已经告诉过它的信息</li>
+            <li data-icon="🚨">信号：代码风格突然变化</li>
+          </ul>
+          <div class="code-block">
+            <span class="code-lang">应对 Prompt</span>
+            <span class="comment"># 重置上下文前先让 AI 总结</span><br>
+            在我们新开一个对话之前，请总结：<br>
+            1. 当前项目的技术栈和架构<br>
+            2. 我们已经完成的部分<br>
+            3. 下一步要做什么<br>
+            4. 需要注意的约束条件<br><br>
+            <span class="comment"># 将总结放进新对话的第一条消息</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header">
+          <span class="card-icon">📁</span>
+          <span class="card-title">用文件做持久化记忆</span>
+          <span class="card-badge badge-good">技巧</span>
+        </div>
+        <div class="card-body">
+          <ul class="tips-list">
+            <li data-icon="📄"><code style="font-size:12px">CLAUDE.md</code> - 项目规范（永久有效）</li>
+            <li data-icon="📄"><code style="font-size:12px">TODO.md</code> - 当前任务清单，让 AI 读取并更新</li>
+            <li data-icon="📄"><code style="font-size:12px">ARCHITECTURE.md</code> - 架构说明，避免 AI 反复理解</li>
+            <li data-icon="📄"><code style="font-size:12px">DECISIONS.md</code> - 记录技术决策和原因，防止 AI 走回头路</li>
+          </ul>
+          <div class="highlight-box">
+            💡 在每次新对话开头，让 AI 读取这些文件：<br>
+            "先读取 CLAUDE.md 和 TODO.md，然后继续上次的任务。"
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== WORKFLOW ========== -->
+  <section class="content-section" id="section-workflow">
+    <div class="section-hero">
+      <div class="hero-icon">⚙️</div>
+      <div class="hero-text">
+        <h2>工作流设计</h2>
+        <p>把 Claude Code 嵌入到日常开发工作流中，形成可复用的自动化流程。</p>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent5)">
+        <div class="card-header">
+          <span class="card-icon">🌅</span>
+          <span class="card-title">每日开发启动流程</span>
+          <span class="card-badge badge-good">仪式感</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">每日开始 Prompt</span>
+            <span class="comment"># 发给 Claude Code 的"晨会"</span><br>
+            读取 <span class="func">TODO.md</span> 和 <span class="func">CLAUDE.md</span>，<br>
+            然后执行：<br>
+            1. <span class="func">git pull --rebase origin main</span><br>
+            2. <span class="func">pnpm install</span>（如果 package.json 有变化）<br>
+            3. 运行测试，报告失败的用例<br>
+            4. 总结今天的任务优先级
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header">
+          <span class="card-icon">🏭</span>
+          <span class="card-title">功能开发标准流程</span>
+          <span class="card-badge badge-tip">SOP</span>
+        </div>
+        <div class="card-body">
+          <ul class="tips-list">
+            <li data-icon="1️⃣">需求分析：让 AI 列出实现该功能需要修改哪些文件</li>
+            <li data-icon="2️⃣">方案确认：确认没有遗漏，再动手写代码</li>
+            <li data-icon="3️⃣">TDD 模式：让 AI 先写测试，再写实现</li>
+            <li data-icon="4️⃣">自测：让 AI 运行测试，报告结果</li>
+            <li data-icon="5️⃣">代码审查：让 AI 自审代码，找出潜在问题</li>
+            <li data-icon="6️⃣">提交：原子化 commit + 创建 PR</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent3)">
+        <div class="card-header">
+          <span class="card-icon">🐛</span>
+          <span class="card-title">Bug 修复标准流程</span>
+          <span class="card-badge badge-tip">SOP</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">Bug 修复 Prompt</span>
+            <span class="comment"># 报告 Bug 的标准格式</span><br>
+            <span class="keyword">问题描述：</span>用户点击保存按钮后报错<br>
+            <span class="keyword">错误信息：</span><span class="string">[粘贴完整错误堆栈]</span><br>
+            <span class="keyword">复现步骤：</span>1. 进入订单页 2. 点击保存<br>
+            <span class="keyword">期望行为：</span>应该成功保存并提示<br><br>
+            请先定位问题，<span class="func">不要直接修改代码</span>，<br>
+            先告诉我你认为问题在哪里。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== TESTING ========== -->
+  <section class="content-section" id="section-testing">
+    <div class="section-hero">
+      <div class="hero-icon">🧪</div>
+      <div class="hero-text">
+        <h2>测试与质量保障</h2>
+        <p>让 Claude Code 不仅写代码，还要保证代码质量——生成测试、运行 CI、分析覆盖率。</p>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header">
+          <span class="card-icon">✅</span>
+          <span class="card-title">TDD 工作模式</span>
+          <span class="card-badge badge-good">推荐</span>
+        </div>
+        <div class="card-body">
+          <p>让 AI 先写测试，再写实现，能显著减少逻辑错误。先测试也能迫使 AI 思考边界情况。</p>
+          <div class="code-block">
+            <span class="code-lang">Prompt</span>
+            实现 <span class="func">calculateDiscount()</span> 函数。<br><br>
+            <span class="comment"># 第一步：先写测试</span><br>
+            先不要写实现，写出所有你能想到的测试用例，<br>
+            包括：正常流程、边界值、异常输入。<br><br>
+            <span class="comment"># 第二步（确认测试后）</span><br>
+            好，现在实现这个函数，确保所有测试通过。
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent4)">
+        <div class="card-header">
+          <span class="card-icon">📊</span>
+          <span class="card-title">让 AI 分析测试覆盖率盲区</span>
+          <span class="card-badge badge-tip">提效</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">Prompt</span>
+            运行 <span class="func">pnpm test --coverage</span>，<br>
+            分析覆盖率报告，找出：<br>
+            1. 覆盖率低于 70% 的核心模块<br>
+            2. 完全没有测试的文件<br>
+            3. 复杂分支逻辑但没有测试的函数<br>
+            按优先级排序，先补最重要的测试
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PROJECT INIT ========== -->
+  <section class="content-section" id="section-project-init">
+    <div class="section-hero">
+      <div class="hero-icon">🚀</div>
+      <div class="hero-text">
+        <h2>项目初始化最佳实践</h2>
+        <p>好的开始是成功的一半。项目初始化阶段做好这些配置，后续开发事半功倍。</p>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header">
+          <span class="card-icon">📂</span>
+          <span class="card-title">必备配置文件清单</span>
+          <span class="card-badge badge-good">Checklist</span>
+        </div>
+        <div class="card-body">
+          <ul class="tips-list">
+            <li data-icon="📄"><code style="font-size:12px">CLAUDE.md</code> - AI 必读规范文件（最重要）</li>
+            <li data-icon="📄"><code style="font-size:12px">.github/pull_request_template.md</code> - PR 模板</li>
+            <li data-icon="📄"><code style="font-size:12px">.github/CODEOWNERS</code> - 代码 owner 配置</li>
+            <li data-icon="📄"><code style="font-size:12px">.gitignore</code> - 包含 AI 生成的临时文件</li>
+            <li data-icon="📄"><code style="font-size:12px">.eslintrc</code> + <code style="font-size:12px">.prettierrc</code> - 代码风格统一</li>
+            <li data-icon="📄"><code style="font-size:12px">ARCHITECTURE.md</code> - 架构图和模块说明</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header">
+          <span class="card-icon">🔧</span>
+          <span class="card-title">CLAUDE.md 完整模板</span>
+          <span class="card-badge badge-good">直接用</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">CLAUDE.md 模板</span>
+            <span class="keyword"># 项目概述</span><br>
+            [简述项目是做什么的，面向什么用户]<br><br>
+            <span class="keyword"># 技术栈</span><br>
+            - 前端：Next.js 14, TypeScript, Tailwind<br>
+            - 后端：Node.js, Prisma, PostgreSQL<br>
+            - 测试：Vitest, Playwright<br><br>
+            <span class="keyword"># 开发规范</span><br>
+            - 使用 pnpm，不用 npm/yarn<br>
+            - 组件放 src/components，页面放 src/app<br>
+            - API 必须有 Zod 参数校验<br><br>
+            <span class="keyword"># 禁止操作</span><br>
+            - 不得修改 prisma/migrations/<br>
+            - 不得安装 lodash（用原生或 radash）<br>
+            - 不得使用 any 类型<br><br>
+            <span class="keyword"># 提交前检查</span><br>
+            - pnpm lint &amp;&amp; pnpm test
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PITFALLS ========== -->
+  <section class="content-section" id="section-pitfalls">
+    <div class="section-hero">
+      <div class="hero-icon">⚠️</div>
+      <div class="hero-text">
+        <h2>常见坑点汇总</h2>
+        <p>这些是最容易踩的坑，提前了解可以节省大量时间和挫败感。</p>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent4)">
+        <div class="card-header">
+          <span class="card-icon">🕳️</span>
+          <span class="card-title">Top 10 最常见坑</span>
+          <span class="card-badge badge-danger">必读</span>
+        </div>
+        <div class="card-body">
+          <ul class="tips-list">
+            <li data-icon="⚠️"><strong>幻觉式自信：</strong>AI 说"已完成"但代码有错，永远要运行一下验证</li>
+            <li data-icon="⚠️"><strong>依赖私自安装：</strong>AI 会悄悄 npm install 新包，要在 CLAUDE.md 里禁止</li>
+            <li data-icon="⚠️"><strong>过度重构：</strong>只说"优化一下"会让 AI 改很多不该改的，要明确范围</li>
+            <li data-icon="⚠️"><strong>测试数据污染：</strong>AI 生成的测试可能残留真实 DB 调用，检查 mock 是否正确</li>
+            <li data-icon="⚠️"><strong>注释欺骗：</strong>AI 会写注释说"处理了 X 情况"但代码实际上没处理</li>
+            <li data-icon="⚠️"><strong>环境变量泄露：</strong>AI 可能把 .env 里的值硬编码到代码里</li>
+            <li data-icon="⚠️"><strong>API 密钥暴露：</strong>检查 AI 生成的代码是否意外把 key 写进了仓库</li>
+            <li data-icon="⚠️"><strong>沉默的失败：</strong>AI 的错误处理常用 console.log 而非正确上报</li>
+            <li data-icon="⚠️"><strong>上下文污染：</strong>长对话后 AI 开始混淆不同任务的需求</li>
+            <li data-icon="⚠️"><strong>无限循环修复：</strong>AI 反复改同一个 bug 却不解决根因，要换角度提问</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SECURITY ========== -->
+  <section class="content-section" id="section-security">
+    <div class="section-hero">
+      <div class="hero-icon">🔒</div>
+      <div class="hero-text">
+        <h2>安全与权限控制</h2>
+        <p>AI 生成的代码可能存在安全漏洞，而且 Claude Code 有权限执行命令——要做好边界控制。</p>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent4)">
+        <div class="card-header">
+          <span class="card-icon">🛡️</span>
+          <span class="card-title">必做的安全检查</span>
+          <span class="card-badge badge-danger">重要</span>
+        </div>
+        <div class="card-body">
+          <ul class="tips-list">
+            <li data-icon="🔑">永不将 .env 文件允许 AI 读取或修改</li>
+            <li data-icon="🗃️">数据库操作：让 AI 只操作测试 DB，不连生产</li>
+            <li data-icon="🕵️">定期用 <code style="font-size:12px">git grep -r "sk-"</code> 检查是否有密钥硬编码</li>
+            <li data-icon="📋">AI 生成的 SQL 要 review，防止注入风险</li>
+            <li data-icon="🔐">用户输入处理代码，必须人工审查</li>
+          </ul>
+          <div class="highlight-box warn">
+            ⚠️ 在 CLAUDE.md 中明确：<strong>禁止读取 .env 文件，禁止执行 DROP/DELETE 等破坏性 SQL</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header">
+          <span class="card-icon">🔐</span>
+          <span class="card-title">限制 Claude Code 的操作权限</span>
+          <span class="card-badge badge-tip">配置</span>
+        </div>
+        <div class="card-body">
+          <p>Claude Code 可以执行 Shell 命令，但你可以通过配置限制它能做什么。</p>
+          <div class="code-block">
+            <span class="code-lang">settings.json</span>
+            {<br>
+            &nbsp;&nbsp;<span class="string">"permissions"</span>: {<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="string">"allow"</span>: [<span class="string">"Bash(pnpm:*)"</span>, <span class="string">"Bash(git:*)"</span>],<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="string">"deny"</span>: [<span class="string">"Bash(rm -rf:*)"</span>, <span class="string">"Bash(curl:*)"</span>]<br>
+            &nbsp;&nbsp;}<br>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== MCP ========== -->
+  <section class="content-section" id="section-mcp">
+    <div class="section-hero">
+      <div class="hero-icon">🔌</div>
+      <div class="hero-text">
+        <h2>MCP 工具集成</h2>
+        <p>通过 MCP（Model Context Protocol）让 Claude Code 连接更多工具——Jira、Figma、数据库、浏览器等。</p>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent2)">
+        <div class="card-header">
+          <span class="card-icon">🧩</span>
+          <span class="card-title">常用 MCP 服务器推荐</span>
+          <span class="card-badge badge-tip">工具箱</span>
+        </div>
+        <div class="card-body">
+          <ul class="tips-list">
+            <li data-icon="🗃️"><strong>@modelcontextprotocol/server-postgres</strong> — 直接查询和分析数据库</li>
+            <li data-icon="🌐"><strong>@modelcontextprotocol/server-puppeteer</strong> — 控制浏览器做 E2E 测试</li>
+            <li data-icon="📁"><strong>@modelcontextprotocol/server-filesystem</strong> — 更细粒度的文件访问控制</li>
+            <li data-icon="🐙"><strong>@modelcontextprotocol/server-github</strong> — 直接操作 GitHub Issues/PR</li>
+            <li data-icon="🔍"><strong>@modelcontextprotocol/server-brave-search</strong> — 让 AI 搜索文档解决问题</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent3)">
+        <div class="card-header">
+          <span class="card-icon">💡</span>
+          <span class="card-title">MCP + GitHub 自动化场景</span>
+          <span class="card-badge badge-good">实战</span>
+        </div>
+        <div class="card-body">
+          <div class="code-block">
+            <span class="code-lang">Prompt 示例</span>
+            <span class="comment"># 连接 GitHub MCP 后可以这样用：</span><br>
+            读取 GitHub Issues 列表中标签为<br>
+            <span class="string">"bug" + "P0"</span> 的所有 issue，<br>
+            按严重程度排序，输出今天的修复计划。<br><br>
+            修复完每个 bug 后，自动关闭对应 issue<br>
+            并添加 "fixed in PR #xxx" 的评论。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PERFORMANCE ========== -->
+  <section class="content-section" id="section-performance">
+    <div class="section-hero">
+      <div class="hero-icon">📈</div>
+      <div class="hero-text">
+        <h2>效率提升 Tricks</h2>
+        <p>一些不容易发现但用了之后显著提升效率的小技巧。</p>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" style="--card-accent: var(--accent)">
+        <div class="card-header">
+          <span class="card-icon">⚡</span>
+          <span class="card-title">提速 Tricks 合集</span>
+          <span class="card-badge badge-good">精华</span>
+        </div>
+        <div class="card-body">
+          <ul class="tips-list">
+            <li data-icon="🚀">用 <code style="font-size:12px">/init</code> 命令让 AI 自动分析项目并生成 CLAUDE.md，节省初始配置时间</li>
+            <li data-icon="🚀">让 AI 同时开多个 Terminal tab，并行处理前后端任务</li>
+            <li data-icon="🚀">对于重复性任务，让 AI 写成 shell 脚本，以后一键执行</li>
+            <li data-icon="🚀">用 <code style="font-size:12px"># 快速问题</code> 前缀提问，让 AI 知道你只需要简短回答</li>
+            <li data-icon="🚀">截图 + 文字描述 UI 问题，比纯文字描述快 3 倍</li>
+            <li data-icon="🚀">让 AI 生成 TODO 注释清单，用 grep 统一查找未完成项</li>
+            <li data-icon="🚀">错误信息 + 文件路径 一起粘贴，AI 能直接定位问题</li>
+            <li data-icon="🚀">用 <code style="font-size:12px">--dangerously-skip-permissions</code> 在受信任环境做无人值守自动化</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="--card-accent: var(--accent5)">
+        <div class="card-header">
+          <span class="card-icon">🎮</span>
+          <span class="card-title">Headless 模式：全自动 CI 流</span>
+          <span class="card-badge badge-tip">进阶</span>
+        </div>
+        <div class="card-body">
+          <p>将 Claude Code 嵌入 GitHub Actions，实现完全自动化的代码生成→测试→PR 流程。</p>
+          <div class="code-block">
+            <span class="code-lang">.github/workflows/ai-fix.yml</span>
+            <span class="keyword">on:</span> [issue_comment]<br>
+            <span class="keyword">jobs:</span><br>
+            &nbsp;&nbsp;ai-fix:<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if:</span> contains(github.event.comment.body, <span class="string">'/ai-fix'</span>)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">steps:</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- uses: actions/checkout@v4<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="keyword">run:</span> npx @anthropic-ai/claude-code<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--print <span class="string">"修复 Issue #${{ github.event.issue.number }}"</span>
+          </div>
+          <div class="highlight-box warn">
+            ⚠️ Headless 模式风险较高，建议仅在非生产分支启用，并设置严格的权限限制。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  function switchSection(id, navEl) {
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('section-' + id).classList.add('active');
+    navEl.classList.add('active');
+  }
+
+  function filterNav(query) {
+    const q = query.toLowerCase();
+    document.querySelectorAll('.nav-item').forEach(item => {
+      const label = item.querySelector('.nav-label').textContent.toLowerCase();
+      item.style.display = label.includes(q) || q === '' ? '' : 'none';
+    });
+  }
+</script>
+
+</body>
+</html>

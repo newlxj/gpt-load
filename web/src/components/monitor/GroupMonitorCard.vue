@@ -137,7 +137,7 @@ async function copyProxyKeys(e: Event) {
     return;
   }
 
-  const copyContent = `分组ID（${getGroupDisplayName(props.group)}）\n令牌（${props.group.proxy_keys}）`;
+  const copyContent = `ID（${props.group.name}）\n令牌（${props.group.proxy_keys}）`;
   const success = await copyToClipboard(copyContent);
   if (success) {
     message.success(t("keys.keysCopiedToClipboard"));

@@ -108,13 +108,38 @@ const yTicks = computed(() => {
 });
 
 // 格式化时间标签
-const formatTimeLabel = (isoString: string) => {
+const formatDatePart = (date: Date) => {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${month}-${day}`;
+};
+
+const formatHourPart = (date: Date) => String(date.getHours()).padStart(2, "0");
+
+const formatMinutePart = (date: Date) => String(date.getMinutes()).padStart(2, "0");
+
+const formatAxisTimeLabel = (isoString: string) => {
   const date = new Date(isoString);
-  return date.toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  const hour = formatHourPart(date);
+  const minute = formatMinutePart(date);
+
+  if (selectedHours.value <= 24) {
+    return `${hour}:${minute}`;
+  }
+
+  return `${formatDatePart(date)} ${hour}h`;
+};
+
+const formatTooltipTimeLabel = (isoString: string) => {
+  const date = new Date(isoString);
+  const hour = formatHourPart(date);
+  const minute = formatMinutePart(date);
+
+  if (selectedHours.value <= 24) {
+    return `${hour}:${minute}`;
+  }
+
+  return `${formatDatePart(date)} ${hour}:${minute}`;
 };
 
 // 生成可见的X轴标签（避免重叠）
@@ -128,7 +153,7 @@ const visibleLabels = computed(() => {
   const step = Math.ceil(labels.length / maxLabels);
 
   return labels
-    .map((label, index) => ({ text: formatTimeLabel(label), index }))
+    .map((label, index) => ({ text: formatAxisTimeLabel(label), index }))
     .filter((_, i) => i % step === 1);
 });
 
@@ -342,7 +367,7 @@ const handleMouseMove = (event: MouseEvent) => {
     };
 
     tooltipData.value = {
-      time: formatTimeLabel(chartData.value.labels[closestTimeIndex]),
+      time: formatTooltipTimeLabel(chartData.value.labels[closestTimeIndex]),
       datasets: datasetsAtTime,
     };
   } else {

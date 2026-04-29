@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code 指令培训手册</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@300;400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #09090f;
+  --surface: #0f1018;
+  --surface2: #161824;
+  --surface3: #1c2030;
+  --border: #1e2238;
+  --border2: #252a40;
+  --accent: #f0a847;
+  --accent2: #5b9cf6;
+  --accent3: #6ee7b7;
+  --accent4: #c084fc;
+  --accent-red: #f87171;
+  --text: #b8bdd0;
+  --text-dim: #5a6080;
+  --text-bright: #eceef8;
+  --tag-bg: #141828;
+  --glow: rgba(240,168,71,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans SC',sans-serif;font-weight:300;min-height:100vh;display:flex;overflow:hidden}
+
+.sidebar{width:300px;height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.logo{padding:22px 18px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.logo-eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}
+.logo-title{font-family:'Noto Serif SC',serif;font-size:19px;color:var(--text-bright);font-weight:700}
+.logo-sub{font-size:11px;color:var(--text-dim);margin-top:3px}
+.logo-ver{display:inline-block;margin-top:7px;background:var(--tag-bg);border:1px solid var(--border2);border-radius:4px;padding:2px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent3)}
+
+.search-wrap{padding:11px;border-bottom:1px solid var(--border);flex-shrink:0}
+.search-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px 8px 30px;color:var(--text);font-family:'Noto Sans SC',sans-serif;font-size:12px;outline:none;transition:border-color .2s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%235a6080' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:9px center}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--text-dim)}
+
+.nav-scroll{overflow-y:auto;flex:1}
+.cat-section{padding:6px 0}
+.cat-label{font-size:9px;letter-spacing:.14em;color:var(--text-dim);text-transform:uppercase;padding:6px 14px 4px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:7px}
+.cat-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 14px;cursor:pointer;transition:background .12s;border-left:2px solid transparent;position:relative}
+.nav-item:hover{background:var(--surface2)}
+.nav-item.active{background:var(--surface2);border-left-color:var(--accent)}
+.nav-item .cmd{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--accent);font-weight:600;min-width:88px;flex-shrink:0}
+.nav-item .desc{font-size:11px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-item.active .desc{color:var(--text)}
+.nav-badge{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:9px;padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace}
+.nb-new{background:rgba(110,231,183,.12);color:var(--accent3);border:1px solid rgba(110,231,183,.3)}
+
+.main{flex:1;height:100vh;overflow-y:auto;padding:34px 44px}
+
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:78vh;text-align:center;gap:14px;animation:fadeIn .3s ease}
+.welcome-glyph{font-size:58px;filter:drop-shadow(0 0 36px rgba(240,168,71,.5))}
+.welcome-title{font-family:'Noto Serif SC',serif;font-size:28px;color:var(--text-bright);font-weight:700}
+.welcome-desc{color:var(--text-dim);font-size:13.5px;line-height:1.85;max-width:440px}
+.stat-pills{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;justify-content:center}
+.stat-pill{background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:5px 14px;font-size:12px;color:var(--text)}
+.stat-pill span{color:var(--accent);font-family:'JetBrains Mono',monospace;font-weight:600}
+.welcome-hint{padding:9px 16px;background:var(--tag-bg);border:1px solid var(--border);border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);animation:pulse 2.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.cmd-detail{display:none;animation:fadeIn .22s ease}
+.cmd-detail.visible{display:block}
+
+.detail-header{display:flex;align-items:flex-start;gap:18px;margin-bottom:26px;padding-bottom:22px;border-bottom:1px solid var(--border)}
+.cmd-badge-wrap{flex-shrink:0}
+.cmd-badge{background:linear-gradient(135deg,var(--surface2),var(--tag-bg));border:1px solid var(--accent);border-radius:9px;padding:11px 16px;font-family:'JetBrains Mono',monospace;font-size:19px;color:var(--accent);font-weight:600;box-shadow:0 0 24px var(--glow),inset 0 1px 0 rgba(255,255,255,.05);display:block;white-space:nowrap}
+.status-tags{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.stag{font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 7px;border-radius:3px;letter-spacing:.05em}
+.stag-new{background:rgba(110,231,183,.1);color:var(--accent3);border:1px solid rgba(110,231,183,.28)}
+.stag-core{background:rgba(240,168,71,.1);color:var(--accent);border:1px solid rgba(240,168,71,.25)}
+
+.detail-meta{flex:1;min-width:0}
+.detail-title{font-family:'Noto Serif SC',serif;font-size:23px;color:var(--text-bright);font-weight:700;margin-bottom:7px;line-height:1.3}
+.detail-summary{color:var(--text);font-size:13.5px;line-height:1.78}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.tag{background:var(--tag-bg);border:1px solid var(--border2);border-radius:4px;padding:3px 9px;font-size:10.5px;color:var(--accent2);font-family:'JetBrains Mono',monospace}
+
+.section{margin-bottom:26px}
+.sec-title{display:flex;align-items:center;gap:8px;font-size:9.5px;letter-spacing:.14em;color:var(--text-dim);text-transform:uppercase;margin-bottom:11px;font-family:'JetBrains Mono',monospace}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.content-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:16px 20px;font-size:13.5px;line-height:1.82;color:var(--text)}
+
+.syntax-box{background:#04050c;border:1px solid var(--border);border-top:2px solid var(--accent);border-radius:8px;overflow:hidden}
+.syntax-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 13px;background:var(--surface);border-bottom:1px solid var(--border)}
+.dots{display:flex;gap:5px}.dot{width:9px;height:9px;border-radius:50%}
+.dr{background:#ff5f57}.dy{background:#febc2e}.dg{background:#28c840}
+.syn-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim)}
+.syn-copy{background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);cursor:pointer;transition:all .15s}
+.syn-copy:hover{border-color:var(--accent2);color:var(--accent2)}
+.syn-content{padding:13px 15px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:2.1}
+.syn-row{display:flex;flex-wrap:wrap;gap:0 4px;align-items:baseline;margin-bottom:1px}
+.prompt{color:var(--text-dim);user-select:none}
+.cmd-kw{color:var(--accent)}
+.cmd-arg{color:var(--accent2)}
+.cmd-cmt{color:var(--text-dim);font-style:italic;font-size:11px}
+.syn-comment-line{color:var(--text-dim);font-style:italic;font-size:11px}
+
+.scenarios{display:flex;flex-direction:column;gap:9px}
+.sc-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;overflow:hidden;transition:border-color .15s;cursor:pointer}
+.sc-card:hover,.sc-card.open{border-color:var(--border2)}
+.sc-card.open{border-color:rgba(91,156,246,.4)}
+.sc-hd{display:flex;align-items:center;gap:11px;padding:11px 14px;user-select:none}
+.sc-num{width:22px;height:22px;background:var(--tag-bg);border:1px solid var(--border2);border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--accent2);font-weight:600;flex-shrink:0}
+.sc-title{font-size:13px;color:var(--text-bright);font-weight:500;flex:1}
+.sc-arrow{font-size:9px;color:var(--text-dim);transition:transform .2s}
+.sc-card.open .sc-arrow{transform:rotate(90deg)}
+.sc-body{display:none;padding:0 14px 13px 47px;font-size:12.5px;color:var(--text-dim);line-height:1.78}
+.sc-card.open .sc-body{display:block}
+.sc-ex{display:inline-block;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 9px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);margin-top:7px}
+
+.tip-item{display:flex;gap:9px;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:7px;margin-bottom:7px;font-size:13px;line-height:1.72;color:var(--text)}
+.tip-icon{flex-shrink:0;font-size:13px;margin-top:1px}
+.warn-item{border-left-color:var(--accent-red)}
+
+.related-grid{display:flex;flex-wrap:wrap;gap:7px}
+.rel-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 13px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+.rel-btn:hover{border-color:var(--accent);background:var(--glow);color:var(--text-bright)}
+.rel-btn small{color:var(--text-dim);font-size:10px}
+
+.no-results{padding:28px 14px;text-align:center;color:var(--text-dim);font-size:13px}
+
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-eyebrow">Claude Code</div>
+    <div class="logo-title">指令培训手册</div>
+    <div class="logo-sub">完整指令速查 · 中文说明 · 持续更新</div>
+    <span class="logo-ver">v2.1 · 2026-02-26</span>
+  </div>
+  <div class="search-wrap">
+    <input class="search-input" id="searchInput" placeholder="搜索指令、功能或标签…" autocomplete="off">
+  </div>
+  <div class="nav-scroll" id="navList"></div>
+</aside>
+
+<main class="main" id="mainContent">
+  <div class="welcome" id="welcomeScreen">
+    <div class="welcome-glyph">⌨️</div>
+    <div class="welcome-title">Claude Code 指令全览</div>
+    <div class="welcome-desc">完整收录 Claude Code 全部内置指令，含最新版新增的 /plugin、/skills、/hooks、/context、/agents、/todos 等，中文详解 + 场景示例 + 使用技巧。</div>
+    <div class="stat-pills">
+      <div class="stat-pill">共 <span id="totalCmds">0</span> 条指令</div>
+      <div class="stat-pill"><span>6</span> 大分类</div>
+      <div class="stat-pill">JSON 维护</div>
+    </div>
+    <div class="welcome-hint">← 点击左侧任意指令开始学习</div>
+  </div>
+  <div class="cmd-detail" id="cmdDetail"></div>
+</main>
+
+<script>
+const data = {
+  version: "2.1.0",
+  lastUpdated: "2026-02-26",
+  categories: [
+    {
+      id: "context", label: "上下文管理",
+      commands: [
+        {
+          id:"compact", cmd:"/compact", title:"压缩对话历史", status:"core",
+          summary:"将当前对话历史智能压缩为结构化摘要，释放上下文窗口空间，平均减少 70% token 消耗，让同一会话持续工作更长时间。",
+          tags:["上下文","token节省","长任务","内存优化"],
+          syntax:[
+            {cmd:"/compact", comment:"# 使用默认策略压缩，保留关键决策"},
+            {cmd:"/compact 保留代码修改记录和错误分析列表", comment:"# 自定义保留重点内容"}
+          ],
+          description:"随着对话轮次增加，上下文窗口（约 200K tokens）会逐渐被历史消息占满。/compact 让 Claude 智能压缩历史为精简摘要，保留任务状态、决策记录和代码上下文。建议配合 /context 监控使用率，在 70% 时主动执行。平均压缩率 70%，120K token 上下文可压缩至约 40K。",
+          scenarios:[
+            {title:"长时间重构大型项目",detail:"对多模块代码库重构，历史积累了数十轮交互，执行 /compact 后继续完成剩余文件，不丢失已完成的重构记录。",example:"/compact 保留已重构文件列表与待处理清单"},
+            {title:"调试会话保持进度",detail:"调试中尝试了多种方案，上下文快满，压缩已尝试的方案记录，继续探索新思路。",example:"/compact"},
+            {title:"长篇技术文档撰写",detail:"写多章节技术文档时中途上下文告急，压缩保留文档结构和已完成章节要点。",example:"/compact 保留文档大纲和各章节核心内容"}
+          ],
+          tips:[
+            {icon:"💡",text:"建议与 /context 配合使用，在使用率 ~70% 时执行 /compact，效果最佳"},
+            {icon:"💡",text:"命令后可附加自然语言，指定摘要时重点保留的信息类型"},
+            {icon:"⚠️",text:"压缩会丢失细节，重要代码片段建议提前写入文件而非只留在对话中",warn:true},
+            {icon:"⚠️",text:"不要连续执行 /compact + /clear，否则会完全丢失上下文",warn:true}
+          ],
+          related:["clear","context","cost"]
+        },
+        {
+          id:"clear", cmd:"/clear", title:"清空对话历史", status:"core",
+          summary:"完全清空当前对话的所有历史消息，重置为空白状态，适合切换到完全不相关的全新任务。操作不可撤销。",
+          tags:["上下文","重置","新任务"],
+          syntax:[{cmd:"/clear", comment:"# 彻底清空全部历史，重新开始"}],
+          description:"/clear 不保留任何摘要，完全清空上下文。适用于：当前任务已完成、要切换到完全不相关的新任务、或 Claude 形成了严重的错误认知需要重置。与 /compact 不同，此操作不可撤销，清空后历史不可恢复。",
+          scenarios:[
+            {title:"任务完成后切换项目",detail:"完成 Python 脚本编写后，切换到完全不同的前端项目，从干净环境开始，避免旧项目信息干扰。",example:"/clear"},
+            {title:"重置错误认知状态",detail:"Claude 在多轮对话中形成了错误认知或进入循环，清空后重新描述问题从头来过。",example:"/clear"}
+          ],
+          tips:[
+            {icon:"💡",text:"如果只是上下文不足，优先考虑 /compact 而非 /clear——前者保留关键信息"},
+            {icon:"⚠️",text:"清空不可撤销，确认不再需要历史信息再执行",warn:true}
+          ],
+          related:["compact","rewind"]
+        },
+        {
+          id:"context", cmd:"/context", title:"查看上下文使用情况", status:"new",
+          summary:"以彩色可视化图表显示上下文窗口的详细使用情况，区分各部分（对话、文件、系统提示）的 token 占比，精准判断何时需要压缩。",
+          tags:["上下文","监控","token","可视化","新版本"],
+          syntax:[
+            {cmd:"/context", comment:"# 显示上下文窗口占用详情和色块图"},
+            {cmd:"/context src/main.ts", comment:"# 将指定文件加入当前上下文"}
+          ],
+          description:"以彩色网格图形展示上下文窗口各部分 token 占用量：对话历史、系统提示、已加载文件、工具调用结果等。超过 70% 使用率时，Claude 的响应质量会开始下降。当 Skills 数量过多超出字符预算（默认 2% 上下文窗口）时，此命令也会显示排除警告。",
+          scenarios:[
+            {title:"判断是否需要压缩",detail:"长任务中不确定是否该执行 /compact，先运行 /context 查看实际使用率，超 70% 再决定。",example:"/context"},
+            {title:"排查响应质量下降",detail:"发现 Claude 回答变得模糊或重复，通过 /context 确认是否因上下文过满导致。",example:"/context"},
+            {title:"加载额外文件",detail:"需要 Claude 参考某个配置文件时，用 /context 命令直接加载到上下文。",example:"/context .env.example"}
+          ],
+          tips:[
+            {icon:"💡",text:"超过 70% 使用率时响应质量开始下降，80%+ 时建议立即 /compact"},
+            {icon:"💡",text:"Skills 过多时会在此看到排除警告，可设置 SLASH_COMMAND_TOOL_CHAR_BUDGET 环境变量调整预算"}
+          ],
+          related:["compact","clear"]
+        },
+        {
+          id:"rewind", cmd:"/rewind", title:"撤回对话轮次", status:"new",
+          summary:"撤销最近一轮或指定轮次的对话，将上下文精准回滚到之前的状态，比 /clear 更轻量，无需重新开始整个会话。",
+          tags:["撤销","回滚","上下文","新版本"],
+          syntax:[
+            {cmd:"/rewind", comment:"# 撤销最近 1 轮对话"},
+            {cmd:"/rewind 3", comment:"# 撤销最近 3 轮对话"}
+          ],
+          description:"当 Claude 的回答走偏了方向，或你提供了错误的指令，/rewind 可以像 Ctrl+Z 一样将对话回滚，无需清空整个历史。保留了之前有价值的上下文，只撤销最近几轮的错误走向。比 /clear 更精准、代价更小。",
+          scenarios:[
+            {title:"回滚错误的代码方向",detail:"Claude 开始按错误理解修改代码，执行 /rewind 撤回后重新给出正确指令。",example:"/rewind"},
+            {title:"撤销多步骤误操作",detail:"不小心触发了不需要的文件修改操作，用 /rewind 3 回退到操作前状态重新来过。",example:"/rewind 3"}
+          ],
+          tips:[
+            {icon:"💡",text:"比 /clear 更精准，只撤销近几轮而保留更早期的有价值上下文"},
+            {icon:"⚠️",text:"连续快速执行 /rewind 可能导致状态难以追踪，建议谨慎使用",warn:true}
+          ],
+          related:["clear","compact"]
+        }
+      ]
+    },
+    {
+      id: "config", label: "配置与模型",
+      commands: [
+        {
+          id:"config", cmd:"/config", title:"管理全局设置", status:"core",
+          summary:"打开 Claude Code 的交互式配置菜单，管理终端主题、默认模型、权限级别、通知偏好等 20+ 持久化设置，配置保存在 ~/.claude/settings.json。",
+          tags:["配置","设置","主题","权限","持久化"],
+          syntax:[{cmd:"/config", comment:"# 打开交互式配置界面（Claude Code v1.0.33+ 支持 20+ 项）"}],
+          description:"统一管理所有 Claude Code 设置：终端配色主题、默认使用的 Claude 模型、文件读写权限级别（allow/ask/deny）、Shell 命令执行策略、MCP 工具激活状态、通知偏好等。配置持久化存储，重启后保留。项目级配置（.claude/settings.json）优先级高于全局配置。",
+          scenarios:[
+            {title:"初次安装后配置环境",detail:"安装 Claude Code 后首次运行 /config，配置个人主题和默认模型偏好。",example:"/config"},
+            {title:"调整权限安全策略",detail:"在生产服务器上工作时，将文件写入权限调整为 ask 模式，防止 Claude 未经确认修改文件。",example:"/config"}
+          ],
+          tips:[
+            {icon:"💡",text:"也可直接编辑 ~/.claude/settings.json 进行高级配置，支持更多字段"},
+            {icon:"💡",text:"项目级 .claude/settings.json 优先于全局配置，适合团队统一规范"}
+          ],
+          related:["model","login","doctor"]
+        },
+        {
+          id:"model", cmd:"/model", title:"切换 AI 模型", status:"core",
+          summary:"在当前会话中切换不同的 Claude 模型，无需退出重启即可在 Opus、Sonnet、Haiku 间灵活切换，按任务复杂度平衡性能与成本。",
+          tags:["模型","切换","性能","成本控制"],
+          syntax:[
+            {cmd:"/model", comment:"# 交互式选择可用模型"},
+            {cmd:"/model claude-opus-4-6", comment:"# 切换到 Opus（最强，适合复杂架构）"},
+            {cmd:"/model claude-sonnet-4-6", comment:"# 切换到 Sonnet（均衡，日常首选）"},
+            {cmd:"/model claude-haiku-4-5", comment:"# 切换到 Haiku（极速，简单任务省钱）"}
+          ],
+          description:"2026 年三款可用模型：Claude Opus 4.6（顶级推理，适合系统设计、复杂重构，约 $15/百万输入 tokens）、Claude Sonnet 4.6（均衡，日常编码首选）、Claude Haiku 4.5（极速响应，成本约为 Opus 的 1/10~1/15，适合简单 bug 修复、格式化等）。",
+          scenarios:[
+            {title:"复杂任务临时升级",detail:"遇到多文件重构或系统架构设计，临时切换到 Opus 获得更强推理，完成后切回 Sonnet。",example:"/model claude-opus-4-6"},
+            {title:"批量简单任务省钱",detail:"批量写注释、格式化、生成测试用例等简单任务，切换到 Haiku 降低 90% 成本。",example:"/model claude-haiku-4-5"}
+          ],
+          tips:[
+            {icon:"💡",text:"切换后立即运行 /cost 确认模型已生效，避免静默回退到旧模型"},
+            {icon:"💡",text:"Haiku vs Opus 成本差异 10~15 倍，善用切换可显著控制月账单"}
+          ],
+          related:["cost","config"]
+        }
+      ]
+    },
+    {
+      id: "memory", label: "记忆与初始化",
+      commands: [
+        {
+          id:"memory", cmd:"/memory", title:"查看与编辑记忆", status:"core",
+          summary:"直接打开并编辑项目的 CLAUDE.md 文件，管理跨会话持久化的项目规范、编码偏好、禁止事项等，Claude 每次启动时自动读取。",
+          tags:["记忆","CLAUDE.md","持久化","规范","跨会话"],
+          syntax:[{cmd:"/memory", comment:"# 打开当前项目的 CLAUDE.md 进行编辑"}],
+          description:"Claude Code 的记忆分两层：全局（~/.claude/CLAUDE.md）存储个人偏好，项目级（.claude/CLAUDE.md）存储项目规范。/memory 打开当前项目记忆文件，可记录：代码规范、禁止修改的目录、架构约定、常用命令、重要文件位置等。Claude 每次会话开始时自动读取。",
+          scenarios:[
+            {title:"设定项目编码规范",detail:"记录「使用 TypeScript ESM、Vitest 测试框架、Conventional Commits」，Claude 每次自动遵循，无需重复说明。",example:"/memory"},
+            {title:"标记禁止修改的区域",detail:"在 CLAUDE.md 中注明「不要修改 generated/ 目录」「不要删除 migration/ 中的文件」等禁止事项。",example:"/memory"}
+          ],
+          tips:[
+            {icon:"💡",text:"直接告诉 Claude「记住：我们用 pnpm 而非 npm」，它会自动更新 CLAUDE.md"},
+            {icon:"💡",text:"CLAUDE.md 建议纳入 git 版本控制，方便团队共享统一的 AI 工作规范"},
+            {icon:"💡",text:"不要在 CLAUDE.md 中堆砌过多内容，只保留 Claude 真正需要的关键信息"}
+          ],
+          related:["init"]
+        },
+        {
+          id:"init", cmd:"/init", title:"初始化项目配置", status:"core",
+          summary:"分析当前项目代码库结构，自动生成包含技术栈、目录结构、常用命令的 CLAUDE.md 配置文件，是接手新项目的第一步。",
+          tags:["初始化","CLAUDE.md","项目配置","自动生成"],
+          syntax:[{cmd:"/init", comment:"# 分析项目并生成初始 CLAUDE.md（平均 15~25 行）"}],
+          description:"Claude Code 扫描当前目录的项目结构（识别语言、框架、依赖、目录组织），自动生成预填写的 CLAUDE.md。这是接手陌生代码库时的推荐第一步——让 Claude 快速建立对项目的基本认知。生成后建议手动补充团队规范、禁止事项等关键信息。",
+          scenarios:[
+            {title:"接手陌生开源项目",detail:"克隆一个不熟悉的代码库后，在根目录运行 /init，Claude 自动梳理项目结构，立即进入高效工作状态。",example:"/init"},
+            {title:"团队规范沉淀",detail:"生成基础文件后，手动补充 Code Review 规范、分支策略、禁止的第三方库等，提交 git 与全团队共享。",example:"/init"}
+          ],
+          tips:[
+            {icon:"💡",text:"已有 CLAUDE.md 的项目上运行会提示覆盖，注意先备份已有的自定义内容"},
+            {icon:"💡",text:"生成后最重要的补充是「禁止事项」——Claude 不能修改哪些文件或目录"}
+          ],
+          related:["memory"]
+        }
+      ]
+    },
+    {
+      id: "tools", label: "工具与集成",
+      commands: [
+        {
+          id:"mcp", cmd:"/mcp", title:"管理 MCP 工具连接", status:"core",
+          summary:"查看和管理已连接的 MCP（Model Context Protocol）服务器状态，MCP 是扩展 Claude Code 能力的标准协议，可接入数据库、GitHub、Slack、Notion 等外部服务。",
+          tags:["MCP","扩展","集成","外部服务"],
+          syntax:[
+            {cmd:"/mcp", comment:"# 查看所有 MCP 服务器连接状态"},
+            {cmd:"# 终端中添加 MCP（会话外执行）:", comment:""},
+            {cmd:"claude mcp add --transport http github https://api.githubcopilot.com/mcp/", comment:"# 添加 GitHub MCP"},
+            {cmd:"claude mcp list", comment:"# 列出已配置的所有 MCP 服务器"}
+          ],
+          description:"MCP 是 Claude Code 连接外部世界的标准接口。常用 MCP：filesystem（扩展文件系统访问）、github（读写 PR/Issues/Commits）、postgres（数据库查询）、fetch（HTTP 请求）、slack（发送消息）、notion（读写文档）等。/mcp 检查这些连接的健康状态，排查集成异常。",
+          scenarios:[
+            {title:"连接数据库直接查询",detail:"配置 PostgreSQL MCP 后，让 Claude 直接查询数据、分析慢查询、优化索引，无需复制粘贴 SQL 和结果。",example:"/mcp"},
+            {title:"GitHub PR 工作流自动化",detail:"连接 GitHub MCP 后，Claude 可直接读取 PR diff、创建评论、管理 Issues，实现完整代码审查自动化。",example:"/mcp"}
+          ],
+          tips:[
+            {icon:"💡",text:"MCP 配置在 claude_desktop_config.json 或 .claude/settings.json 的 mcpServers 字段"},
+            {icon:"💡",text:"推荐常用：mcp-server-filesystem、mcp-server-github、mcp-server-postgres、mcp-server-fetch"}
+          ],
+          related:["tools","plugin"]
+        },
+        {
+          id:"tools", cmd:"/tools", title:"查看可用工具列表", status:"core",
+          summary:"列出当前会话 Claude 可使用的所有工具，包括内置工具（Read、Write、Bash 等）和已挂载的 MCP 外部工具，了解当前能力边界。",
+          tags:["工具","能力","权限","边界"],
+          syntax:[{cmd:"/tools", comment:"# 显示所有可用工具及权限说明"}],
+          description:"内置工具：Read（读文件）、Write（写文件）、Bash（执行命令）、Grep（搜索代码）、Glob（匹配文件）、WebFetch（网络请求）、TodoRead/TodoWrite（任务追踪）等。MCP 工具以服务器前缀显示，如 mcp__github__get_pr。在开始复杂任务前确认所需工具可用且有权限。",
+          scenarios:[
+            {title:"任务前确认工具权限",detail:"执行需要数据库操作的任务前，先查看 mcp__postgres 工具是否已挂载且有权限。",example:"/tools"},
+            {title:"排查操作执行失败",detail:"Claude 某个操作反复失败，通过 /tools 确认是工具不可用还是权限不足。",example:"/tools"}
+          ],
+          tips:[
+            {icon:"💡",text:"在 settings.json 的 permissions 字段可精细控制每个工具的 allow/ask/deny 规则"},
+            {icon:"💡",text:"Bash 工具可限制为 Bash(git *) 只允许执行 git 命令，提升安全性"}
+          ],
+          related:["mcp","config"]
+        },
+        {
+          id:"ide", cmd:"/ide", title:"管理 IDE 集成", status:"new",
+          summary:"查看和管理 Claude Code 与 IDE（VS Code、JetBrains 等）的集成状态，配置后可在编辑器侧边栏直接使用 Claude Code 功能。",
+          tags:["IDE","VS Code","集成","编辑器","新版本"],
+          syntax:[
+            {cmd:"/ide", comment:"# 查看 IDE 集成状态"},
+            {cmd:"/ide connect vscode", comment:"# 连接到 VS Code 集成"}
+          ],
+          description:"Claude Code 支持与主流 IDE 深度集成，通过 /ide 管理这些连接。集成后享受：编辑器侧边栏 Claude Code 面板、内联代码建议、选中代码直接发送、文件上下文自动感知等功能，比纯终端模式体验更流畅。",
+          scenarios:[
+            {title:"配置 VS Code 深度集成",detail:"安装 Claude Code VS Code 插件后，通过 /ide connect 建立连接，实现编辑器内无缝操作。",example:"/ide"},
+            {title:"排查 IDE 集成异常",detail:"VS Code 侧边栏的 Claude Code 功能无响应，通过 /ide 查看连接状态找到问题。",example:"/ide"}
+          ],
+          tips:[
+            {icon:"💡",text:"IDE 集成提供比纯终端更好的代码定位体验，支持选中代码直接对话"},
+            {icon:"💡",text:"JetBrains（IDEA、WebStorm、PyCharm）同样有集成插件支持"}
+          ],
+          related:["tools","mcp"]
+        },
+        {
+          id:"review", cmd:"/review", title:"GitHub PR 代码审查", status:"new",
+          summary:"查看 GitHub Pull Request 的评论和审查状态，需要先配置 GitHub MCP 集成，让 Claude 直接参与代码审查工作流，自动处理 Review 意见。",
+          tags:["GitHub","代码审查","PR","新版本"],
+          syntax:[
+            {cmd:"/review", comment:"# 查看当前关联 PR 的审查状态和评论"},
+            {cmd:"/review #123", comment:"# 查看指定编号 PR 的所有 Review 意见"}
+          ],
+          description:"需要先配置 GitHub MCP（claude mcp add github）。配置后，/review 读取 PR 的所有评论、审查意见，Claude 可直接对代码进行修改、回复评论、处理 Review 意见，实现完整 PR 处理自动化。可配合 Claude GitHub App 实现 CI/CD 自动审查。",
+          scenarios:[
+            {title:"批量处理 Review 意见",detail:"收到 8 条 Review 意见，运行 /review 让 Claude 读取后逐一处理对应代码修改，大幅提升效率。",example:"/review #42"},
+            {title:"自动化 PR 质量检查",detail:"在 GitHub Actions 中配置 Claude 自动审查每个 PR，输出结构化的质量报告。",example:"/review"}
+          ],
+          tips:[
+            {icon:"💡",text:"需要先安装 Claude GitHub App 并配置 GitHub MCP 才能完整使用此功能"},
+            {icon:"💡",text:"配合 /agents 中的 code-reviewer 专用 Agent 效果更好"}
+          ],
+          related:["mcp","agents"]
+        }
+      ]
+    },
+    {
+      id: "extend", label: "扩展系统（新版）",
+      commands: [
+        {
+          id:"skills", cmd:"/skills /skill-name", title:"Skills 技能系统", status:"new",
+          summary:"查看和调用已安装的 Skills——Claude Code 的能力扩展模块。每个 Skill 是含 SKILL.md 的目录，可被 Claude 自动触发或用 /skill-name 手动调用。",
+          tags:["Skills","扩展","自定义","SKILL.md","新版本"],
+          syntax:[
+            {cmd:"/skills", comment:"# 列出所有已安装的 Skills"},
+            {cmd:"/explain-code src/auth.ts", comment:"# 调用名为 explain-code 的 Skill"},
+            {cmd:"/commit", comment:"# 调用自定义 commit Skill 生成规范提交信息"}
+          ],
+          description:"Skills 是 Claude Code 的能力扩展标准（遵循 Agent Skills 开放标准，可跨 AI 工具共享）。每个 Skill = 一个目录 + SKILL.md 文件，结构：YAML frontmatter（名称、描述、触发条件）+ Markdown 指令内容。存放：项目级 .claude/skills/，个人级 ~/.claude/skills/。原来的 .claude/commands/ 自定义命令已合并入 Skills，向下兼容。",
+          scenarios:[
+            {title:"创建代码解释 Skill",detail:"创建 ~/.claude/skills/explain-code/SKILL.md，描述为「用类比和 ASCII 图解释代码」，被问「这段代码怎么工作」时自动调用。",example:"/explain-code src/auth/jwt.ts"},
+            {title:"规范化 Git 提交信息",detail:"创建 .claude/skills/commit/SKILL.md，调用 /commit 后 Claude 自动分析 git diff 生成符合 Conventional Commits 规范的提交信息。",example:"/commit"},
+            {title:"自定义文档生成",detail:"创建 /docs Skill，包含项目文档模板规范，调用后 Claude 按统一格式生成 API 文档。",example:"/docs src/api/users.ts"}
+          ],
+          tips:[
+            {icon:"💡",text:"Skills 遵循 Agent Skills 开放标准，可以在不同 AI 工具间共享和复用"},
+            {icon:"💡",text:"frontmatter 中添加 disable-model-invocation: true 可阻止 Claude 自动触发，只允许手动调用"},
+            {icon:"💡",text:"Skill 可捆绑 Python/Shell 脚本，突破纯提示词的能力限制（如生成可视化报告）"},
+            {icon:"💡",text:"Skills 数量过多时 /context 会显示预算警告，可设置环境变量 SLASH_COMMAND_TOOL_CHAR_BUDGET 调整"}
+          ],
+          related:["plugin","agents","hooks"]
+        },
+        {
+          id:"plugin", cmd:"/plugin", title:"插件管理系统", status:"new",
+          summary:"管理 Claude Code 插件——将 Skills、Hooks、Agents 打包为可分发的完整扩展包，支持从官方 Marketplace 或第三方源安装社区插件。",
+          tags:["插件","Marketplace","分发","社区","新版本"],
+          syntax:[
+            {cmd:"/plugin", comment:"# 查看已安装插件列表"},
+            {cmd:"/plugin list", comment:"# 显示所有插件的详细信息"},
+            {cmd:"/plugin install claude-code-essentials", comment:"# 从官方 Marketplace 安装"},
+            {cmd:"/plugin marketplace add https://github.com/user/plugins", comment:"# 添加第三方插件源"}
+          ],
+          description:"Plugin 是 Skills + Hooks + Subagents + 自定义命令的组合包，便于发布和共享完整工作流。Anthropic 官方维护 Marketplace，提供 pdf、docx、pptx、xlsx 等文档处理插件（这就是本工具使用的插件来源！）。社区开发者可发布插件；团队可搭建私有 Marketplace 统一管理内部插件。",
+          scenarios:[
+            {title:"安装官方文档处理插件",detail:"安装 Anthropic 官方的 claude-code-essentials 包，获得 PDF、Word、Excel、PPT 等文档创建和处理能力。",example:"/plugin install claude-code-essentials"},
+            {title:"发布团队工作流插件",detail:"将团队的代码审查、自动化测试、部署流程打包为插件，发布到私有 Marketplace 供所有成员一键安装。",example:"/plugin marketplace add https://internal.company.com/claude-plugins"},
+            {title:"查看已安装功能",detail:"查看当前安装了哪些插件，确认某个功能来自哪个插件，或移除不再需要的插件。",example:"/plugin list"}
+          ],
+          tips:[
+            {icon:"💡",text:"Anthropic 官方提供 pdf、docx、pptx、xlsx、imagegen 等实用文档和图像处理插件"},
+            {icon:"💡",text:"Plugin 比单个 Skill 更完整——包含配套的 Hooks 和 Agents，开箱即用"},
+            {icon:"💡",text:"团队使用时，将插件配置提交 git，所有成员通过 /plugin install 一键同步"}
+          ],
+          related:["skills","agents","hooks"]
+        },
+        {
+          id:"hooks", cmd:"/hooks", title:"自动化钩子配置", status:"new",
+          summary:"通过交互式界面配置 Hooks——在特定事件（文件写入后、工具调用前后、会话开始时）自动触发的确定性脚本，实现工作流自动化，不消耗 AI tokens。",
+          tags:["Hooks","自动化","钩子","确定性","新版本"],
+          syntax:[
+            {cmd:"/hooks", comment:"# 打开 Hooks 交互式配置界面"},
+            {cmd:"# settings.json 配置示例:", comment:""},
+            {cmd:"PostToolUse: Write(*.py) → python -m black $file", comment:"# 写 Python 文件后自动格式化"}
+          ],
+          description:"Hooks 是确定性自动化层，直接触发 Shell 命令，不经过 AI 处理（0 tokens 消耗）。支持钩子类型：PreToolUse（工具调用前）、PostToolUse（工具调用后）、SessionStart（会话开始时）、Notification（通知时）。常见用途：代码格式化、lint 检查、自动测试、Git 操作、发送通知等。",
+          scenarios:[
+            {title:"Python 文件自动格式化",detail:"配置 PostToolUse 钩子：Claude 每次写入 *.py 文件后，自动运行 black + isort 格式化，无需手动执行。",example:"/hooks"},
+            {title:"会话启动自动加载数据",detail:"配置 SessionStart 钩子：在 Tasks/ 目录启动会话时，自动读取当日任务清单和会议记录注入上下文。",example:"/hooks"},
+            {title:"提交前自动运行测试",detail:"配置钩子：Claude 完成代码修改后，自动运行相关测试，失败时阻止提交并报告错误。",example:"/hooks"}
+          ],
+          tips:[
+            {icon:"💡",text:"Hooks 是确定性执行的，不消耗 AI tokens，适合所有重复性自动化任务"},
+            {icon:"💡",text:"通过 matcher 字段精细控制触发条件，如 Write(*.ts) 只对 TypeScript 文件生效"},
+            {icon:"💡",text:"Hooks 配置在 settings.json 的 hooks 字段，也可通过 /hooks 界面可视化管理"}
+          ],
+          related:["skills","plugin"]
+        },
+        {
+          id:"agents", cmd:"/agents", title:"子代理（Subagents）管理", status:"new",
+          summary:"查看和管理已配置的 Subagents——拥有独立上下文窗口和专属身份的专业化 Claude 实例，用于代码审查、安全分析、架构设计等域特定任务，支持并行执行。",
+          tags:["Subagents","专业化","并行","上下文隔离","新版本"],
+          syntax:[
+            {cmd:"/agents", comment:"# 列出所有已配置的 Subagents"},
+            {cmd:"# Subagent 定义文件（.claude/agents/reviewer.md）:", comment:""},
+            {cmd:"# name: code-reviewer  model: sonnet  tools: Read,Grep", comment:""}
+          ],
+          description:"Subagents 是拥有独立上下文的专业化 Claude 实例，具有各自的系统提示、可用工具和模型配置。存放路径：项目级 .claude/agents/（团队共享）、个人级 ~/.claude/agents/（个人跨项目复用）。Claude 根据 description 字段自动委派合适任务给对应 Subagent，也可以并行调度多个 Subagent 处理不同子任务。",
+          scenarios:[
+            {title:"专业代码审查 Agent",detail:"配置 code-reviewer Subagent，专注安全性、性能、可维护性三个维度，Claude 写完代码后自动委派二次审查。",example:"/agents"},
+            {title:"并行处理多个模块",detail:"同时需要前端调试、后端优化、文档更新，分别委派给前端 Agent、后端 Agent、文档 Agent 并行执行，大幅缩短时间。",example:"/agents"},
+            {title:"安全扫描专用 Agent",detail:"配置 security-scanner Agent 使用 Opus 模型，专门负责扫描 SQL 注入、XSS、密钥泄露等安全问题。",example:"/agents"}
+          ],
+          tips:[
+            {icon:"💡",text:"每个 Subagent 有独立上下文，同类专项任务比通用对话更精准，且不污染主上下文"},
+            {icon:"💡",text:"可为不同 Subagent 指定不同模型：安全扫描用 Opus，日志分析用 Haiku 节省成本"},
+            {icon:"💡",text:"description 字段的质量决定 Claude 委派准确度，要写清楚「何时使用」而非「能做什么」"}
+          ],
+          related:["skills","plugin","hooks","review"]
+        }
+      ]
+    },
+    {
+      id: "session", label: "会话与诊断",
+      commands: [
+        {
+          id:"cost", cmd:"/cost", title:"查看会话费用", status:"core",
+          summary:"实时显示当前会话的 token 消耗量和估算费用，分项列出输入、输出、缓存读取、缓存写入的 token 数量和对应美元成本。",
+          tags:["费用","token","监控","成本控制"],
+          syntax:[{cmd:"/cost", comment:"# 显示当前会话的详细 token 消耗和费用明细"}],
+          description:"输出示例：Input: 45,230 tokens ($0.68)、Output: 12,890 tokens ($0.97)、Cache read: 128,400 tokens ($0.10，折扣价）、Cache write: 45,230 tokens ($0.68)、Total: $2.43。2026年参考价：Opus 4.6 约 $15/百万输入，Haiku 4.5 约 $1/百万。60分钟密集开发会话平均花费 $0.30~$1.50。",
+          scenarios:[
+            {title:"定期监控成本",detail:"长会话中每 30 分钟查看一次，超出预期时切换到 Haiku 或执行 /compact 减少 token 消耗。",example:"/cost"},
+            {title:"验证模型切换效果",detail:"执行 /model claude-haiku-4-5 后，通过 /cost 确认模型已切换，对比同类任务的实际成本差异。",example:"/cost"}
+          ],
+          tips:[
+            {icon:"💡",text:"Cache read tokens 成本极低，善用固定 CLAUDE.md 内容充分利用缓存"},
+            {icon:"💡",text:"/cost 显示的是当前会话累计，非月度账单，不要混淆"},
+            {icon:"💡",text:"发现成本异常增长时，检查是否有大文件被反复加载到上下文"}
+          ],
+          related:["model","compact","context"]
+        },
+        {
+          id:"todos", cmd:"/todos", title:"查看会话任务清单", status:"new",
+          summary:"显示当前会话中 Claude 自动追踪的待办任务列表，Claude 从对话中智能提取并跟踪任务项，方便了解长会话中的进度状态。",
+          tags:["任务","TODO","进度","追踪","新版本"],
+          syntax:[{cmd:"/todos", comment:"# 显示 Claude 追踪的所有 TODO 项及状态"}],
+          description:"Claude Code 会自动从对话内容中识别并追踪任务项（如「需要修复的 bug」「待实现的功能」「待更新的文档」等），内部使用 TodoRead/TodoWrite 工具维护任务列表。/todos 展示这些自动追踪的待办清单及其状态（待处理/进行中/已完成）。",
+          scenarios:[
+            {title:"检查长会话进度",detail:"处理一批 bug 的长会话末期，运行 /todos 确认还有哪些 bug 未完成，避免遗漏。",example:"/todos"},
+            {title:"功能开发收尾确认",detail:"功能开发接近尾声，用 /todos 检查是否有提到但未实现的小功能点或边缘情况处理。",example:"/todos"}
+          ],
+          tips:[
+            {icon:"💡",text:"明确说「记住我们还需要做 X」可以手动向任务列表添加项"},
+            {icon:"💡",text:"配合 /compact 使用，压缩上下文时 TODO 项会被优先保留在摘要中"}
+          ],
+          related:["compact","context"]
+        },
+        {
+          id:"export", cmd:"/export", title:"导出对话内容", status:"new",
+          summary:"将当前会话的对话历史导出为 Markdown 文件或复制到剪贴板，方便归档重要讨论、分享解决方案或作为后续项目的参考文档。",
+          tags:["导出","归档","Markdown","分享","新版本"],
+          syntax:[
+            {cmd:"/export", comment:"# 导出为 Markdown（交互式选择保存路径）"},
+            {cmd:"/export architecture-decision.md", comment:"# 导出到指定文件"},
+            {cmd:"/export --clipboard", comment:"# 直接复制到剪贴板"}
+          ],
+          description:"将完整对话历史（用户消息、Claude 回复、工具调用结果）导出为结构化 Markdown 文档。适用于：重要的架构讨论归档（ADR）、调试过程分享给团队、作为需求文档的附录、或放入项目 Wiki。",
+          scenarios:[
+            {title:"归档架构决策记录",detail:"和 Claude 完成系统架构方案讨论后，导出完整对话作为 ADR 文档，记录决策背景和权衡过程。",example:"/export architecture-decision-2026.md"},
+            {title:"分享 Bug 调试过程",detail:"解决了一个棘手的 bug 后，导出调试过程分享给团队，避免他人重复踩坑。",example:"/export --clipboard"}
+          ],
+          tips:[
+            {icon:"💡",text:"导出的 Markdown 格式规整，可直接放入项目 docs/ 目录或 Notion/Confluence"},
+            {icon:"💡",text:"--clipboard 适合快速粘贴到 Slack、邮件等即时分享场景"}
+          ],
+          related:["resume","memory"]
+        },
+        {
+          id:"resume", cmd:"/resume", title:"恢复历史会话", status:"core",
+          summary:"列出并恢复之前保存的 Claude Code 对话会话，继续中断的工作，完整保留历史上下文、工具调用状态和任务进度。",
+          tags:["会话","恢复","历史","持久化"],
+          syntax:[
+            {cmd:"/resume", comment:"# 列出最近历史会话供交互式选择"},
+            {cmd:"claude --resume <session-id>", comment:"# 命令行直接恢复指定会话"},
+            {cmd:"claude --resume <session-id> -p \"继续完成测试\"", comment:"# 非交互模式恢复并立即执行"}
+          ],
+          description:"Claude Code 自动保存每次会话（含完整消息历史、工具调用状态、文件修改记录）。通过 /resume 查看最近会话列表并恢复。可配合 claude --list-sessions 查看所有历史会话。在 CI/CD 脚本中，可用 --resume 实现多步骤自动化工作流。",
+          scenarios:[
+            {title:"继续中断的开发任务",detail:"昨天调试到一半被打断，今天通过 /resume 找到昨天的会话，无缝继续，保留完整调试历史。",example:"/resume"},
+            {title:"CI/CD 多步骤自动化",detail:"脚本中多次恢复同一会话分步执行复杂审查任务，保持上下文连贯性，避免重复说明背景。",example:"claude --resume $SESSION_ID -p \"运行全量测试并修复失败项\""}
+          ],
+          tips:[
+            {icon:"💡",text:"使用 claude --list-sessions 获取完整的历史会话列表和对应的 session-id"},
+            {icon:"💡",text:"在自动化脚本中，session-id 可从 --output-format json 的输出中用 jq 提取"}
+          ],
+          related:["export","clear"]
+        },
+        {
+          id:"status", cmd:"/status", title:"系统状态面板", status:"new",
+          summary:"显示 Claude Code 综合状态面板，一站式查看版本号、API 连接延迟、当前模型、活跃 MCP 连接、会话统计、账户配额等系统信息。",
+          tags:["状态","系统","监控","综合","新版本"],
+          syntax:[{cmd:"/status", comment:"# 打开系统状态综合面板"}],
+          description:"综合状态仪表盘：当前版本号、API 连接延迟、使用的模型名称、MCP 服务器连接状态（在线/离线）、当前会话 token 用量、账户配额剩余等。比 /doctor 更轻量快速，适合日常快速确认，/doctor 适合深度安装问题诊断。",
+          scenarios:[
+            {title:"重要任务开始前确认",detail:"启动预计耗时较长的重构任务前，运行 /status 确认 API 正常、配额充足、MCP 连接在线。",example:"/status"},
+            {title:"响应变慢时快速排查",detail:"Claude 响应突然变慢，通过 /status 快速确认是 API 延迟高还是本地环境问题。",example:"/status"}
+          ],
+          tips:[
+            {icon:"💡",text:"比 /doctor 轻量，适合日常快速检查；需要深度诊断安装问题时用 /doctor"}
+          ],
+          related:["doctor","cost","version"]
+        },
+        {
+          id:"version", cmd:"/version", title:"版本与更新日志", status:"new",
+          summary:"显示当前 Claude Code 的版本号，可查看当前版本的更新日志（Release Notes），了解新增功能和修复内容，确认特定功能是否可用。",
+          tags:["版本","更新日志","Release Notes","新版本"],
+          syntax:[{cmd:"/version", comment:"# 显示版本号和当前版本更新日志"}],
+          description:"快速查看当前安装的 Claude Code 版本号和 Release Notes。当某个功能行为与预期不符时，先确认版本是否包含该功能，再进行排查。使用 npm update -g @anthropic-ai/claude-code 升级到最新版。版本信息也会在 /status 和 /doctor 中显示。",
+          scenarios:[
+            {title:"确认新功能可用性",detail:"听说最新版增加了 /plugin 功能，通过 /version 确认自己的版本是否已支持该功能。",example:"/version"},
+            {title:"团队版本对齐",detail:"排查团队成员操作结果不一致时，通过 /version 确认大家使用的是相同版本。",example:"/version"}
+          ],
+          tips:[
+            {icon:"💡",text:"升级命令：npm update -g @anthropic-ai/claude-code 或 npm install -g @anthropic-ai/claude-code@latest"},
+            {icon:"💡",text:"版本号格式为 vX.Y.Z，功能更新通常在 Minor 版本（Y）中，Bug 修复在 Patch（Z）中"}
+          ],
+          related:["doctor","status"]
+        },
+        {
+          id:"doctor", cmd:"/doctor", title:"环境健康检查", status:"core",
+          summary:"全面诊断 Claude Code 运行环境，检查 Node.js 版本、API 密钥、文件权限、MCP 连通性等，输出健康报告（✅/⚠️/❌）和具体修复建议。",
+          tags:["诊断","环境","安装","排查","故障"],
+          syntax:[{cmd:"/doctor", comment:"# 运行完整环境健康检查，输出详细报告"}],
+          description:"检查项：Node.js 版本（推荐 22+ LTS）、npm 全局安装状态、API Key 配置有效性、MCP 服务器连通性、文件系统读写权限、网络代理设置等。用 ✅/⚠️/❌ 标注每项检查结果，并给出具体修复步骤。⚠️ 警告也需要处理，不只是关注 ❌ 错误。",
+          scenarios:[
+            {title:"新机器安装后验证",detail:"在新电脑或新服务器上安装 Claude Code 后，运行 /doctor 确认所有组件就绪，一次性发现潜在问题。",example:"/doctor"},
+            {title:"排查莫名异常行为",detail:"Claude 突然无法执行某类操作，运行 /doctor 排除环境配置问题，再进行其他排查。",example:"/doctor"}
+          ],
+          tips:[
+            {icon:"💡",text:"⚠️ 警告同样需要关注，可能导致功能不稳定，不要只看 ❌ 错误"},
+            {icon:"💡",text:"2026 年推荐 Node.js 22 LTS，低版本可能导致某些新功能异常"}
+          ],
+          related:["bug","status","version"]
+        },
+        {
+          id:"bug", cmd:"/bug", title:"报告 Bug 给 Anthropic", status:"core",
+          summary:"快速向 Anthropic 提交 Claude Code 的 Bug 反馈，可附带当前会话日志（需确认），帮助官方工程师定位和修复问题。",
+          tags:["反馈","Bug","支持","官方"],
+          syntax:[
+            {cmd:"/bug", comment:"# 启动交互式 Bug 反馈流程"},
+            {cmd:"/bug /compact 执行后关键上下文大量丢失", comment:"# 直接附带问题描述"}
+          ],
+          description:"遇到 Claude Code 功能异常时，/bug 提供一键反馈途径：填写问题描述 → 可选附带会话日志（需授权）→ 提交给 Anthropic 工程团队。附带日志能让工程师更容易复现问题，显著加快修复速度。提交前确认日志中无敏感信息（API Key、密码等）。",
+          scenarios:[
+            {title:"工具调用反复失败",detail:"某个工具始终报错但原因不明，多次重试无效后，通过 /bug 附带日志提交详细反馈。",example:"/bug Bash 工具执行 npm ci 命令时无响应，超时 30 秒"},
+            {title:"输出质量异常",detail:"Claude 生成的代码存在明显重复或逻辑错误，通过 /bug 附带具体案例提交反馈。",example:"/bug"}
+          ],
+          tips:[
+            {icon:"💡",text:"附带日志时，注意确认其中没有 API Key、密码等敏感信息"},
+            {icon:"💡",text:"包含清晰复现步骤的 Bug 报告能显著加快修复速度，建议详细描述"}
+          ],
+          related:["doctor","status"]
+        },
+        {
+          id:"help", cmd:"/help", title:"查看帮助文档", status:"core",
+          summary:"显示所有可用指令的完整列表，包含内置指令、自定义 Skills/命令和 MCP 工具，0 token 消耗，是最快速的指令参考途径。",
+          tags:["帮助","文档","参考","入门","0-token"],
+          syntax:[{cmd:"/help", comment:"# 显示所有可用指令（不消耗 AI tokens，极速）"}],
+          description:"/help 是唯一不调用 AI 模型的指令（0 tokens），直接输出本地缓存的指令列表，响应时间 <200ms。显示内容包括：所有内置指令（本手册收录的这些）、.claude/commands/ 自定义命令、.claude/skills/ Skills 命令、MCP 服务器工具命令。新用户必备起点。",
+          scenarios:[
+            {title:"快速查找忘记的指令",detail:"记得有个查看费用的指令但忘了名字，/help 秒速列出全部指令供查阅。",example:"/help"},
+            {title:"确认自定义 Skill 注册成功",detail:"创建新 Skill 后，/help 确认 /skill-name 已出现在指令列表中，说明注册成功。",example:"/help"}
+          ],
+          tips:[
+            {icon:"💡",text:"/help 消耗 0 tokens，响应 <200ms，是最轻量的参考方式，随时使用"},
+            {icon:"💡",text:"自定义 Skills、MCP 工具命令也会统一出现在 /help 列表中"}
+          ],
+          related:["doctor","status","version"]
+        }
+      ]
+    }
+  ]
+};
+
+function buildNav(filter = '') {
+  const container = document.getElementById('navList');
+  container.innerHTML = '';
+  const fl = filter.toLowerCase();
+
+  data.categories.forEach(cat => {
+    const cmds = cat.commands.filter(c =>
+      !fl || c.cmd.includes(fl) || c.title.includes(fl) ||
+      c.summary.includes(fl) || c.tags.some(t => t.includes(fl)) ||
+      c.description.includes(fl)
+    );
+    if (!cmds.length) return;
+
+    const sec = document.createElement('div');
+    sec.className = 'cat-section';
+    sec.innerHTML = `<div class="cat-label">${cat.label}</div>`;
+
+    cmds.forEach(cmd => {
+      const item = document.createElement('div');
+      item.className = 'nav-item';
+      item.dataset.id = cmd.id;
+      const badge = cmd.status === 'new' ? `<span class="nav-badge nb-new">NEW</span>` : '';
+      item.innerHTML = `<span class="cmd">${cmd.cmd.split(' ')[0]}</span><span class="desc">${cmd.title}</span>${badge}`;
+      item.onclick = () => showCommand(cmd.id);
+      sec.appendChild(item);
+    });
+    container.appendChild(sec);
+  });
+
+  if (!filter) {
+    const total = data.categories.reduce((s, c) => s + c.commands.length, 0);
+    document.getElementById('totalCmds').textContent = total;
+  }
+
+  if (!container.innerHTML) {
+    container.innerHTML = `<div class="no-results">没有找到「${filter}」相关指令</div>`;
+  }
+}
+
+function findCmd(id) {
+  for (const cat of data.categories)
+    for (const cmd of cat.commands)
+      if (cmd.id === id) return cmd;
+  return null;
+}
+
+function showCommand(id) {
+  const cmd = findCmd(id);
+  if (!cmd) return;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const active = document.querySelector(`.nav-item[data-id="${id}"]`);
+  if (active) active.classList.add('active');
+  document.getElementById('welcomeScreen').style.display = 'none';
+  const detail = document.getElementById('cmdDetail');
+  detail.classList.remove('visible');
+  setTimeout(() => {
+    detail.innerHTML = renderDetail(cmd);
+    detail.classList.add('visible');
+    detail.querySelectorAll('.sc-card').forEach(c => {
+      c.querySelector('.sc-hd').onclick = () => c.classList.toggle('open');
+    });
+    detail.querySelectorAll('.rel-btn').forEach(b => {
+      b.onclick = () => showCommand(b.dataset.id);
+    });
+    detail.querySelectorAll('.syn-copy').forEach(b => {
+      b.onclick = () => {
+        navigator.clipboard.writeText(b.dataset.text).then(() => {
+          b.textContent = '已复制 ✓';
+          setTimeout(() => b.textContent = '复制', 1500);
+        });
+      };
+    });
+    document.getElementById('mainContent').scrollTo(0, 0);
+  }, 18);
+}
+
+function renderDetail(cmd) {
+  const stags = {core:'核心指令', new:'新版本新增'};
+  const scls = {core:'stag-core', new:'stag-new'};
+
+  const synLines = cmd.syntax.map(s => {
+    if (!s.cmd.startsWith('/') && !s.cmd.startsWith('claude') && s.cmd.startsWith('#')) {
+      return `<div class="syn-comment-line">${s.cmd}</div>`;
+    }
+    const parts = (s.cmd + (s.arg ? ' ' + s.arg : '')).split(' ');
+    const kw = parts[0];
+    const rest = parts.slice(1).join(' ');
+    return `<div class="syn-row"><span class="prompt">❯ </span><span class="cmd-kw">${kw}</span>${rest ? `<span class="cmd-arg"> ${rest}</span>` : ''} <span class="cmd-cmt">${s.comment}</span></div>`;
+  }).join('');
+
+  const copyText = cmd.syntax.filter(s => s.cmd && !s.cmd.startsWith('#')).map(s => s.cmd + (s.arg ? ' '+s.arg : '')).join('\n');
+
+  const scenarios = cmd.scenarios.map((s,i) =>
+    `<div class="sc-card"><div class="sc-hd"><div class="sc-num">${String(i+1).padStart(2,'0')}</div><div class="sc-title">${s.title}</div><div class="sc-arrow">▶</div></div><div class="sc-body">${s.detail}<br><code class="sc-ex">${s.example}</code></div></div>`
+  ).join('');
+
+  const tips = cmd.tips.map(t =>
+    `<div class="tip-item${t.warn?' warn-item':''}"><div class="tip-icon">${t.icon}</div><div>${t.text}</div></div>`
+  ).join('');
+
+  const related = cmd.related.length
+    ? `<div class="section"><div class="sec-title">🔗 相关指令</div><div class="related-grid">${cmd.related.map(r=>{const rc=findCmd(r);return rc?`<div class="rel-btn" data-id="${r}">${rc.cmd.split(' ')[0]}<small>${rc.title}</small></div>`:''}).join('')}</div></div>`:'';
+
+  const tags = cmd.tags.map(t=>`<span class="tag">${t}</span>`).join('');
+
+  return `
+<div class="detail-header">
+  <div class="cmd-badge-wrap">
+    <span class="cmd-badge">${cmd.cmd}</span>
+    <div class="status-tags"><span class="stag ${scls[cmd.status]||'stag-core'}">${stags[cmd.status]||cmd.status}</span></div>
+  </div>
+  <div class="detail-meta">
+    <div class="detail-title">${cmd.title}</div>
+    <div class="detail-summary">${cmd.summary}</div>
+    <div class="tags">${tags}</div>
+  </div>
+</div>
+<div class="section"><div class="sec-title">📖 详细说明</div><div class="content-card">${cmd.description}</div></div>
+<div class="section"><div class="sec-title">⌨️ 使用语法</div><div class="syntax-box"><div class="syntax-bar"><div class="dots"><div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div></div><div class="syn-label">Terminal — Claude Code</div><button class="syn-copy" data-text="${copyText.replace(/"/g,'&quot;')}">复制</button></div><div class="syn-content">${synLines}</div></div></div>
+<div class="section"><div class="sec-title">🎯 使用场景</div><div class="scenarios">${scenarios}</div></div>
+<div class="section"><div class="sec-title">✨ 使用技巧</div>${tips}</div>
+${related}`;
+}
+
+document.getElementById('searchInput').addEventListener('input', e => buildNav(e.target.value.trim()));
+buildNav();
+</script>
+</body>
+</html>
