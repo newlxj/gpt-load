@@ -140,6 +140,7 @@ func (p *KeyProvider) executeTransactionWithRetry(operation func(tx *gorm.DB) er
 }
 
 func (p *KeyProvider) handleSuccess(keyID uint, keyHashKey, activeKeysListKey string) error {
+	// 快速路径：store 显示健康则直接返回，避免 DB 事务
 	keyDetails, err := p.store.HGetAll(keyHashKey)
 	if err != nil {
 		return fmt.Errorf("failed to get key details from store: %w", err)
@@ -152,14 +153,16 @@ func (p *KeyProvider) handleSuccess(keyID uint, keyHashKey, activeKeysListKey st
 		return nil
 	}
 
+	// 密钥有失败记录或已失效，需要 DB 事务重置
 	return p.executeTransactionWithRetry(func(tx *gorm.DB) error {
 		var key models.APIKey
 		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&key, keyID).Error; err != nil {
 			return fmt.Errorf("failed to lock key %d for update: %w", keyID, err)
 		}
 
+		// 使用 DB 行锁内的值判断是否需要恢复
 		updates := map[string]any{"failure_count": 0}
-		if !isActive {
+		if key.Status != models.KeyStatusActive {
 			updates["status"] = models.KeyStatusActive
 		}
 
@@ -171,7 +174,7 @@ func (p *KeyProvider) handleSuccess(keyID uint, keyHashKey, activeKeysListKey st
 			return fmt.Errorf("failed to update key details in store: %w", err)
 		}
 
-		if !isActive {
+		if key.Status != models.KeyStatusActive {
 			logrus.WithField("keyID", keyID).Debug("Key has recovered and is being restored to active pool.")
 			if err := p.store.LRem(activeKeysListKey, 0, keyID); err != nil {
 				return fmt.Errorf("failed to LRem key before LPush on recovery: %w", err)
@@ -186,18 +189,15 @@ func (p *KeyProvider) handleSuccess(keyID uint, keyHashKey, activeKeysListKey st
 }
 
 func (p *KeyProvider) handleFailure(apiKey *models.APIKey, group *models.Group, keyHashKey, activeKeysListKey string) error {
+	// 快速路径：先检查 store 判断是否已失效，避免不必要的 DB 事务
 	keyDetails, err := p.store.HGetAll(keyHashKey)
 	if err != nil {
 		return fmt.Errorf("failed to get key details from store: %w", err)
 	}
-
 	if keyDetails["status"] == models.KeyStatusInvalid {
 		return nil
 	}
 
-	failureCount, _ := strconv.ParseInt(keyDetails["failure_count"], 10, 64)
-
-	// 获取该分组的有效配置
 	blacklistThreshold := group.EffectiveConfig.BlacklistThreshold
 
 	return p.executeTransactionWithRetry(func(tx *gorm.DB) error {
@@ -206,7 +206,12 @@ func (p *KeyProvider) handleFailure(apiKey *models.APIKey, group *models.Group, 
 			return fmt.Errorf("failed to lock key %d for update: %w", apiKey.ID, err)
 		}
 
-		newFailureCount := failureCount + 1
+		// 使用 DB 行锁内的值作为真实来源，避免 store/DB 不一致和事务重试导致的计数膨胀
+		if key.Status == models.KeyStatusInvalid {
+			return nil
+		}
+
+		newFailureCount := key.FailureCount + 1
 
 		updates := map[string]any{"failure_count": newFailureCount}
 		shouldBlacklist := blacklistThreshold > 0 && newFailureCount >= int64(blacklistThreshold)
@@ -218,17 +223,19 @@ func (p *KeyProvider) handleFailure(apiKey *models.APIKey, group *models.Group, 
 			return fmt.Errorf("failed to update key stats in DB: %w", err)
 		}
 
-		if _, err := p.store.HIncrBy(keyHashKey, "failure_count", 1); err != nil {
-			return fmt.Errorf("failed to increment failure count in store: %w", err)
+		// 使用 HSet 而非 HIncrBy，确保事务重试时 store 与 DB 保持一致
+		storeUpdates := map[string]any{"failure_count": newFailureCount}
+		if shouldBlacklist {
+			storeUpdates["status"] = models.KeyStatusInvalid
+		}
+		if err := p.store.HSet(keyHashKey, storeUpdates); err != nil {
+			return fmt.Errorf("failed to update failure count in store: %w", err)
 		}
 
 		if shouldBlacklist {
 			logrus.WithFields(logrus.Fields{"keyID": apiKey.ID, "threshold": blacklistThreshold}).Warn("Key has reached blacklist threshold, disabling.")
 			if err := p.store.LRem(activeKeysListKey, 0, apiKey.ID); err != nil {
 				return fmt.Errorf("failed to LRem key from active list: %w", err)
-			}
-			if err := p.store.HSet(keyHashKey, map[string]any{"status": models.KeyStatusInvalid}); err != nil {
-				return fmt.Errorf("failed to update key status to invalid in store: %w", err)
 			}
 		}
 
