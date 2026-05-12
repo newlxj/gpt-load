@@ -209,8 +209,10 @@ func (ps *ProxyServer) executeRequestWithRetry(
 		defer resp.Body.Close()
 	}
 
-	// Unified error handling for retries. Exclude 404 from being a retryable error.
-	if err != nil || (resp != nil && resp.StatusCode >= 400 && resp.StatusCode != http.StatusNotFound) {
+	// Unified error handling for retries.
+	// Retry policy is fully defined by group.FailoverStatusCodeMatcher (derived from EffectiveConfig).
+	shouldRetryByStatus := resp != nil && shouldFailoverOnStatusCode(resp.StatusCode, group)
+	if err != nil || shouldRetryByStatus {
 		if err != nil && app_errors.IsIgnorableError(err) {
 			logrus.Debugf("Client-side ignorable error for key %s, aborting retries: %v", utils.MaskAPIKey(apiKey.KeyValue), err)
 			ps.logRequest(c, originalGroup, group, apiKey, startTime, 499, err, isStream, upstreamURL, channelHandler, bodyBytes, models.RequestTypeFinal)
@@ -227,7 +229,7 @@ func (ps *ProxyServer) executeRequestWithRetry(
 			parsedError = errorMessage
 			logrus.Debugf("Request failed (attempt %d/%d) for key %s: %v", retryCount+1, cfg.MaxRetries, utils.MaskAPIKey(apiKey.KeyValue), err)
 		} else {
-			// HTTP-level error (status >= 400)
+			// Retryable upstream response (HTTP status code matched failover policy)
 			statusCode = resp.StatusCode
 			errorBody, readErr := io.ReadAll(resp.Body)
 			if readErr != nil {
@@ -296,6 +298,13 @@ func (ps *ProxyServer) executeRequestWithRetry(
 
 	// 异步更新统计数据
 	ps.updateGroupStats(group.ID, resp.StatusCode < 400)
+}
+
+func shouldFailoverOnStatusCode(statusCode int, group *models.Group) bool {
+	if group == nil {
+		return false
+	}
+	return group.FailoverStatusCodeMatcher.Match(statusCode)
 }
 
 // logRequest is a helper function to create and record a request log.

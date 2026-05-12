@@ -10,6 +10,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+<<<<<<< HEAD
+=======
+	"gpt-load/internal/db"
+	"gpt-load/internal/failover"
+	"gpt-load/internal/models"
+	"gpt-load/internal/store"
+	"gpt-load/internal/syncer"
+	"gpt-load/internal/types"
+	"gpt-load/internal/utils"
+>>>>>>> 275cc508e06fca2da31f74347bae2286453d3a4d
 	"os"
 	"reflect"
 	"strconv"
@@ -30,6 +40,15 @@ type SystemSettingsManager struct {
 // NewSystemSettingsManager creates a new, uninitialized SystemSettingsManager.
 func NewSystemSettingsManager() *SystemSettingsManager {
 	return &SystemSettingsManager{}
+}
+
+func validateStringSettingValue(key, val string) error {
+	if key == "failover_status_codes" {
+		if _, err := failover.ParseStatusCodeMatcher(val); err != nil {
+			return fmt.Errorf("invalid value for %s (%q): %w", key, val, err)
+		}
+	}
+	return nil
 }
 
 type groupManager interface {
@@ -307,6 +326,9 @@ func (sm *SystemSettingsManager) ValidateSettings(settingsMap map[string]any) er
 					}
 				}
 			}
+			if err := validateStringSettingValue(key, strVal); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("unsupported type for setting key validation: %s", key)
 		}
@@ -377,6 +399,9 @@ func (sm *SystemSettingsManager) ValidateGroupConfigOverrides(configMap map[stri
 					}
 				}
 			}
+			if err := validateStringSettingValue(key, strVal); err != nil {
+				return err
+			}
 		case reflect.Bool:
 			_, ok := value.(bool)
 			if !ok {
@@ -410,6 +435,7 @@ func (sm *SystemSettingsManager) DisplaySystemConfig(settings types.SystemSettin
 	logrus.Info("  --- Key & Group Behavior ---")
 	logrus.Infof("    Max Retries: %d", settings.MaxRetries)
 	logrus.Infof("    Blacklist Threshold: %d", settings.BlacklistThreshold)
+	logrus.Infof("    Failover Status Codes: %s", settings.FailoverStatusCodes)
 	logrus.Infof("    Key Validation Interval: %d minutes", settings.KeyValidationIntervalMinutes)
 	logrus.Info("====================================")
 	logrus.Info("")

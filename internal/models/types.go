@@ -1,7 +1,12 @@
 package models
 
 import (
+<<<<<<< HEAD
 	"aimanager/internal/types"
+=======
+	"gpt-load/internal/failover"
+	"gpt-load/internal/types"
+>>>>>>> 275cc508e06fca2da31f74347bae2286453d3a4d
 	"time"
 
 	"gorm.io/datatypes"
@@ -25,6 +30,7 @@ type SystemSetting struct {
 
 // GroupConfig 存储特定于分组的配置
 type GroupConfig struct {
+<<<<<<< HEAD
 	RequestTimeout               *int       `json:"request_timeout,omitempty"`
 	IdleConnTimeout              *int       `json:"idle_conn_timeout,omitempty"`
 	ConnectTimeout               *int       `json:"connect_timeout,omitempty"`
@@ -42,6 +48,22 @@ type GroupConfig struct {
 	ExpiresAt            *string    `json:"expires_at,omitempty"`             // 过期时间（格式: 2006-01-02 15:04:05）
 	MaxRequestsPerHour   *int       `json:"max_requests_per_hour,omitempty"`  // 每小时最大请求次数，0表示不限制
 	MaxRequestsPerMonth  *int       `json:"max_requests_per_month,omitempty"` // 每月最大请求次数，0表示不限制
+=======
+	RequestTimeout               *int    `json:"request_timeout,omitempty"`
+	IdleConnTimeout              *int    `json:"idle_conn_timeout,omitempty"`
+	ConnectTimeout               *int    `json:"connect_timeout,omitempty"`
+	MaxIdleConns                 *int    `json:"max_idle_conns,omitempty"`
+	MaxIdleConnsPerHost          *int    `json:"max_idle_conns_per_host,omitempty"`
+	ResponseHeaderTimeout        *int    `json:"response_header_timeout,omitempty"`
+	ProxyURL                     *string `json:"proxy_url,omitempty"`
+	MaxRetries                   *int    `json:"max_retries,omitempty"`
+	BlacklistThreshold           *int    `json:"blacklist_threshold,omitempty"`
+	FailoverStatusCodes          *string `json:"failover_status_codes,omitempty"`
+	KeyValidationIntervalMinutes *int    `json:"key_validation_interval_minutes,omitempty"`
+	KeyValidationConcurrency     *int    `json:"key_validation_concurrency,omitempty"`
+	KeyValidationTimeoutSeconds  *int    `json:"key_validation_timeout_seconds,omitempty"`
+	EnableRequestBodyLogging     *bool   `json:"enable_request_body_logging,omitempty"`
+>>>>>>> 275cc508e06fca2da31f74347bae2286453d3a4d
 }
 
 // HeaderRule defines a single rule for header manipulation.
@@ -108,9 +130,10 @@ type Group struct {
 	UpdatedAt           time.Time            `json:"updated_at"`
 
 	// For cache
-	ProxyKeysMap     map[string]struct{} `gorm:"-" json:"-"`
-	HeaderRuleList   []HeaderRule        `gorm:"-" json:"-"`
-	ModelRedirectMap map[string]string   `gorm:"-" json:"-"`
+	ProxyKeysMap              map[string]struct{}        `gorm:"-" json:"-"`
+	HeaderRuleList            []HeaderRule               `gorm:"-" json:"-"`
+	ModelRedirectMap          map[string]string          `gorm:"-" json:"-"`
+	FailoverStatusCodeMatcher failover.StatusCodeMatcher `gorm:"-" json:"-"`
 }
 
 // APIKey 对应 api_keys 表

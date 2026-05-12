@@ -138,9 +138,13 @@ func registerProtectedAPIRoutes(api *gin.RouterGroup, serverHandler *handler.Ser
 		groups.GET("", serverHandler.ListGroups)
 		groups.GET("/list", serverHandler.List)
 		groups.GET("/config-options", serverHandler.GetGroupConfigOptions)
+<<<<<<< HEAD
 		groups.GET("/monitor", serverHandler.GetGroupMonitor)
 		groups.GET("/monitor/sort-order", serverHandler.GetGroupSortOrder)
 		groups.PUT("/monitor/sort-order", serverHandler.SaveGroupSortOrder)
+=======
+		groups.PUT("/reorder", serverHandler.ReorderGroups)
+>>>>>>> 275cc508e06fca2da31f74347bae2286453d3a4d
 		groups.PUT("/:id", serverHandler.UpdateGroup)
 		groups.DELETE("/:id", serverHandler.DeleteGroup)
 		groups.GET("/:id/stats", serverHandler.GetGroupStats)
